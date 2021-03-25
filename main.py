@@ -25,7 +25,7 @@ except:
     exit()
 
 REFRESH_TOKEN = config.get('REFRESH_TOKEN')
-FILE_PATH = os.path.dirname(config.get('FILE_PATH'))
+FILE_PATH = config.get('FILE_PATH')
 DRIVE_ID = config.get('DRIVE_ID')
 PARENT_FILE_ID = config.get('PARENT_FILE_ID')
 # 打印文件信息

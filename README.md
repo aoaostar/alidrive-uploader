@@ -9,6 +9,21 @@
 * python3
 
 ## 使用方法
+
+```shell
+git clone https://github.com/Hidove/aliyundrive-uploader.git
+cd aliyundrive-uploader
+pip install -r requirements.txt
+```
+
+如果执行`pip install`时提示`-bash: pip: command not found`
+就是`pip`命令没有安装，执行下方命令安装即可，然后再执行即可
+
+```shell
+wget https://bootstrap.pypa.io/get-pip.py
+python3 get-pip.py
+```
+
 * 重命名`example.config.json`为`config.json`
 * 填写好`config.json`的内容
 

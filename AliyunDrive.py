@@ -29,6 +29,7 @@ class AliyunDrive:
         self.start_time = time.time()
         self.filepath = filepath
         self.filename = os.path.basename(filepath)
+        print_info('【{filename}】正在校检文件中，耗时与文件大小有关'.format(filename=self.filename))
         self.hash = get_hash(self.filepath)
         self.filesize = os.path.getsize(self.filepath)
         message = '''=================================================

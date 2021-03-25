@@ -1,0 +1,7 @@
+*.log
+log
+test.py
+config.json
+filelist.json
+.idea
+__pycache__

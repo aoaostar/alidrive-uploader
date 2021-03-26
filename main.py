@@ -6,7 +6,9 @@
 # +-------------------------------------------------------------------
 import json
 import os
+import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from hashlib import sha1
 
 from common import get_all_file, print_warn, print_error
@@ -20,15 +22,17 @@ from AliyunDrive import AliyunDrive
 try:
     with open(os.getcwd() + '/config.json', 'r') as f:
         config = json.loads(f.read())
+        REFRESH_TOKEN = config.get('REFRESH_TOKEN')
+        FILE_PATH = config.get('FILE_PATH')
+        DRIVE_ID = config.get('DRIVE_ID')
+        PARENT_FILE_ID = config.get('PARENT_FILE_ID')
+        # 启用多线程
+        MULTITHREADING = bool(config.get('MULTITHREADING'))
+        # 线程池最大线程数
+        MAX_WORKERS = config.get('MAX_WORKERS')
 except:
     print_error('请配置好config.json后重试')
     exit()
-
-REFRESH_TOKEN = config.get('REFRESH_TOKEN')
-FILE_PATH = config.get('FILE_PATH')
-DRIVE_ID = config.get('DRIVE_ID')
-PARENT_FILE_ID = config.get('PARENT_FILE_ID')
-# 打印文件信息
 
 drive = AliyunDrive(DRIVE_ID, PARENT_FILE_ID, REFRESH_TOKEN)
 # 刷新token
@@ -36,7 +40,6 @@ drive.token_refresh()
 
 
 def upload_file(filepath):
-
     drive.load_file(filepath)
     # 创建上传
     create_post_json = drive.create()
@@ -49,9 +52,10 @@ def upload_file(filepath):
     # 提交
     return drive.complete(file_id, upload_id)
 
+
 def load_task():
     try:
-        with open(os.getcwd() + '/filelist.json', 'r') as f:
+        with open(os.getcwd() + '/task.json', 'r') as f:
             task = f.read()
             return json.loads(task)
     except:
@@ -59,24 +63,55 @@ def load_task():
 
 
 def save_task(task):
-    with open(os.getcwd() + '/filelist.json', 'w') as f:
+    with open(os.getcwd() + '/task.json', 'w') as f:
         f.write(json.dumps(task))
         f.flush()
 
-file_list = get_all_file(FILE_PATH)
-task = load_task()
 
-for file in file_list:
-    tmp = {
-        "filepath": file,
-        "upload_time": 0
-    }
-    hexdigest = sha1(file.encode('utf-8')).hexdigest()
-    if not hexdigest in task:
-        task[hexdigest] = tmp
-    if task[hexdigest]['upload_time'] <= 0:
-        if upload_file(file):
-            task[hexdigest]['upload_time'] = time.time()
-            save_task(task)
-    else:
-        print_warn(os.path.basename(file) + ' 已上传，无需重复上传')
+# 命令行单文件上传
+if len(sys.argv) == 2:
+    file_list = [sys.argv[1]]
+    task = {}
+else:
+    file_list = get_all_file(FILE_PATH)
+    task = load_task()
+
+pool_executor = ThreadPoolExecutor(MAX_WORKERS)
+
+if MULTITHREADING:
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        future_list = []
+        for file in file_list:
+            tmp = {
+                "filepath": file,
+                "upload_time": 0
+            }
+            hexdigest = sha1(file.encode('utf-8')).hexdigest()
+            if not hexdigest in task:
+                task[hexdigest] = tmp
+            if task[hexdigest]['upload_time'] <= 0:
+                # 提交线程
+                future = executor.submit(upload_file, file)
+                future_list.append(future)
+            else:
+                print_warn(os.path.basename(file) + ' 已上传，无需重复上传')
+
+        for res in as_completed(future_list):
+            if res.result():
+                task[hexdigest]['upload_time'] = time.time()
+                save_task(task)
+else:
+    for file in file_list:
+        tmp = {
+            "filepath": file,
+            "upload_time": 0
+        }
+        hexdigest = sha1(file.encode('utf-8')).hexdigest()
+        if not hexdigest in task:
+            task[hexdigest] = tmp
+        if task[hexdigest]['upload_time'] <= 0:
+            if upload_file(file):
+                task[hexdigest]['upload_time'] = time.time()
+                save_task(task)
+        else:
+            print_warn(os.path.basename(file) + ' 已上传，无需重复上传')

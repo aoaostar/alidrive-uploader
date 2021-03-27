@@ -21,22 +21,21 @@ from AliyunDrive import AliyunDrive
 
 def get_parent_folder_id(root_path, filepath):
     print_info('检索目录中')
-    filepath_split = (root_path + filepath).split(os.sep)
+    filepath_split = (root_path + filepath.lstrip(os.sep)).split(os.sep)
     del filepath_split[len(filepath_split) - 1]
-
     path_name = os.sep.join(filepath_split)
     if not path_name in drive.folder_id_dict:
         parent_folder_id = 'root'
         parent_folder_name = os.sep
         if len(filepath_split) > 0:
             for folder in filepath_split:
-                if (folder == ''):
+                if folder == '':
                     continue
                 parent_folder_id = drive.create_folder(folder, parent_folder_id)
-                parent_folder_name = parent_folder_name + folder + os.sep
-                folder_id_dict[parent_folder_name] = parent_folder_id
+                parent_folder_name = parent_folder_name.rstrip(os.sep) + os.sep + folder
+                drive.folder_id_dict[parent_folder_name] = parent_folder_id
     else:
-        parent_folder_id = folder_id_dict[path_name]
+        parent_folder_id = drive.folder_id_dict[path_name]
         print_info('已存在目录，无需创建')
 
     print_info('目录id获取成功{parent_folder_id}'.format(parent_folder_id=parent_folder_id))
@@ -77,6 +76,8 @@ def save_task(task):
     with open(os.getcwd() + '/task.json', 'w') as f:
         f.write(json.dumps(task))
         f.flush()
+
+
 # 配置信息
 try:
     with open(os.getcwd() + '/config.json', 'rb') as f:
@@ -95,10 +96,6 @@ except Exception as e:
 drive = AliyunDrive(DRIVE_ID, ROOT_PATH, REFRESH_TOKEN)
 # 刷新token
 drive.token_refresh()
-# 目录的id列表
-folder_id_dict = {}
-
-
 # 命令行参数上传
 if len(sys.argv) == 2:
     if os.path.isdir(sys.argv[1]):
@@ -129,10 +126,10 @@ if MULTITHREADING:
             hexdigest = sha1(file.encode('utf-8')).hexdigest()
             if not hexdigest in task:
                 task[hexdigest] = tmp
-            if task[hexdigest]['upload_time'] <= 0:
-                # 提交线程
-                future = executor.submit(upload_file, FILE_PATH, file)
-                future_list.append(future)
+                if task[hexdigest]['upload_time'] <= 0:
+                    # 提交线程
+                    future = executor.submit(upload_file, FILE_PATH, file)
+                    future_list.append(future)
             else:
                 print_warn(os.path.basename(file) + ' 已上传，无需重复上传')
 
@@ -149,9 +146,9 @@ else:
         hexdigest = sha1(file.encode('utf-8')).hexdigest()
         if not hexdigest in task:
             task[hexdigest] = tmp
-        if task[hexdigest]['upload_time'] <= 0:
-            if upload_file(FILE_PATH, file):
-                task[hexdigest]['upload_time'] = time.time()
-                save_task(task)
+            if task[hexdigest]['upload_time'] <= 0:
+                if upload_file(FILE_PATH, file):
+                    task[hexdigest]['upload_time'] = time.time()
+                    save_task(task)
         else:
             print_warn(os.path.basename(file) + ' 已上传，无需重复上传')

@@ -5,3 +5,4 @@ config.json
 filelist.json
 .idea
 __pycache__
+task.json

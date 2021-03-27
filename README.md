@@ -29,13 +29,13 @@ python3 get-pip.py
 * 重命名`example.config.json`为`config.json`
 * 填写好`config.json`的内容
 
-![](https://z3.ax1x.com/2021/03/26/6XhFqx.png)
+![](https://z3.ax1x.com/2021/03/27/6zB8JA.png)
 
 ```json
 {
   "REFRESH_TOKEN": "refresh_token",
   "DRIVE_ID": "drive_id",
-  "PARENT_FILE_ID": "目录ID",
+  "ROOT_PATH": "网盘目录",
   "FILE_PATH": "D:\\Pictures\\",
   "MULTITHREADING": false,
   "MAX_WORKERS": 5
@@ -43,9 +43,9 @@ python3 get-pip.py
 ```
 | 参数             | 注释                              | 值              |   |
 |----------------|---------------------------------|----------------|---|
-| REFRESH_TOKEN  | 阿里云盘jwt刷新的token                 |                |   |
+| REFRESH_TOKEN  | 阿里云盘刷新的token                 |                |   |
 | DRIVE_ID       | 阿里云盘驱动ID，目前不知道做何使用的，可能后续官方有新想法吧 |                |   |
-| PARENT_FILE_ID | 阿里云盘目录ID                        |                |   |
+| ROOT_PATH      | 阿里云盘目录                        |    我的照片      |   |
 | FILE_PATH      | 文件夹目录，填写绝对路径                    | D:\\Pictures\\ |   |
 | MULTITHREADING | 是否启用多线程                         | true/false     |   |
 | MAX_WORKERS    | 线程池最大线程数，请根据自己机器填写              | 5              |   |
@@ -56,6 +56,9 @@ chmod +x main.py
 > 多文件上传
 ```shell
 python3 main.py
+```
+```shell
+python3 main.py /www/wwwroot/download/
 ```
 > 单文件上传
 

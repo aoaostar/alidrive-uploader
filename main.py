@@ -137,6 +137,8 @@ if MULTITHREADING:
             if res.result():
                 task[hexdigest]['upload_time'] = time.time()
                 save_task(task)
+            else:
+                print_error(os.path.basename(file) + ' 上传失败')
 else:
     for file in file_list:
         tmp = {
@@ -150,5 +152,7 @@ else:
                 if upload_file(FILE_PATH, file):
                     task[hexdigest]['upload_time'] = time.time()
                     save_task(task)
+                else:
+                    print_error(os.path.basename(file) + ' 上传失败')
         else:
             print_warn(os.path.basename(file) + ' 已上传，无需重复上传')

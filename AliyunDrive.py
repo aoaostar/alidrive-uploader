@@ -7,7 +7,6 @@
 import json
 import os
 import time
-from hashlib import sha1
 
 import requests
 from tqdm import tqdm
@@ -134,8 +133,7 @@ class AliyunDrive:
             print_info('AccessToken已失效，尝试刷新AccessToken中')
             if self.token_refresh():
                 print_info('AccessToken刷新成功，返回创建上传任务')
-                self.complete(file_id, upload_id)
-                return
+                return self.complete(file_id, upload_id)
             print_error('无法刷新AccessToken，准备退出')
             exit()
         s = time.time() - self.start_time

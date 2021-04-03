@@ -1,7 +1,7 @@
 {
   "REFRESH_TOKEN": "refresh_token",
   "DRIVE_ID": "drive_id",
-  "PARENT_FILE_ID": "目录ID",
+  "ROOT_PATH": "网盘目录",
   "FILE_PATH": "D:\\Pictures\\",
   "MULTITHREADING": false,
   "MAX_WORKERS": 5

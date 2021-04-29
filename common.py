@@ -7,10 +7,16 @@
 import hashlib
 import os
 import random
+import threading
 import time
 
+LOCK = threading.Lock()
+DATA = {
+    'folder_id_dict': {}
+}
 
-def get_hash(filepath, block_size=64 * 1024):
+
+def get_hash(filepath, block_size=2 * 1024 * 1024):
     with open(filepath, 'rb') as f:
         sha1 = hashlib.sha1()
         while True:

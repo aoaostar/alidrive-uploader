@@ -7,20 +7,28 @@
 import io
 from typing import Union, Iterable
 from tqdm.utils import CallbackIOWrapper
+
+
 class UploadChunksIterator(Iterable):
 
     def __init__(
-        self, file: Union[io.BufferedReader, CallbackIOWrapper], total_size: int, chunk_size: int = 16 * 1024
-    ):  # 16MiB
+            self, file: Union[io.BufferedReader, CallbackIOWrapper],
+            total_size: int,
+            chunk_size: int = 10 * 1024,
+    ):
         self.file = file
         self.chunk_size = chunk_size
         self.total_size = total_size
+        self.index = 0
 
     def __iter__(self):
         return self
 
     def __next__(self):
+        if self.index * self.chunk_size >= len(self):
+            raise StopIteration
         data = self.file.read(self.chunk_size)
+        self.index += 1
         if not data:
             raise StopIteration
         return data

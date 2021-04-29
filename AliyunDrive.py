@@ -5,11 +5,14 @@
 # | Author: 李小恩 <i@abcyun.cc>
 # +-------------------------------------------------------------------
 import json
+import math
 import os
 import time
 
 import requests
 from tqdm import tqdm
+
+import common
 
 requests.packages.urllib3.disable_warnings()
 from UploadChunksIterator import UploadChunksIterator
@@ -17,16 +20,15 @@ from common import print_warn, print_info, print_error, print_success, get_hash
 
 
 class AliyunDrive:
-    def __init__(self, drive_id, root_path, refresh_token, folder_id_dict=None):
-        if folder_id_dict is None:
-            folder_id_dict = {}
-        self.folder_id_dict = folder_id_dict
+    def __init__(self, drive_id, root_path, refresh_token):
         self.drive_id = drive_id
         self.root_path = root_path
         self.refresh_token = refresh_token
+        self.filepath = None
         self.realpath = None
         self.filename = None
         self.hash = None
+        self.chunk_size = 10485760
 
     def load_file(self, filepath, realpath):
         self.start_time = time.time()
@@ -46,47 +48,55 @@ class AliyunDrive:
         print_info(message)
 
     def token_refresh(self):
-        global post_json
-        data = {"refresh_token": self.refresh_token}
-        post = requests.post(
-            'https://websv.aliyundrive.com/token/refresh',
-            data=json.dumps(data),
-            headers={
-                'content-type': 'application/json;charset=UTF-8'
-            },
-            verify=False
-        )
+        common.LOCK.acquire()
         try:
-            post_json = post.json()
-            # 刷新配置中的token
-            with open(os.getcwd() + '/config.json', 'rb') as f:
-                config = json.loads(f.read())
-            config['REFRESH_TOKEN'] = post_json['refresh_token']
-            with open(os.getcwd() + '/config.json', 'w') as f:
-                f.write(json.dumps(config))
-                f.flush()
+            data = {"refresh_token": self.refresh_token}
+            post = requests.post(
+                'https://websv.aliyundrive.com/token/refresh',
+                data=json.dumps(data),
+                headers={
+                    'content-type': 'application/json;charset=UTF-8'
+                },
+                verify=False
+            )
+            try:
+                post_json = post.json()
+                # 刷新配置中的token
+                with open(os.getcwd() + '/config.json', 'rb') as f:
+                    config = json.loads(f.read().decode('utf-8'))
+                config['REFRESH_TOKEN'] = post_json['refresh_token']
+                with open(os.getcwd() + '/config.json', 'w') as f:
+                    f.write(json.dumps(config))
+                    f.flush()
 
-        except Exception as e:
-            print_warn('refresh_token已经失效')
-            raise e
+            except Exception as e:
+                print_warn('refresh_token已经失效')
+                raise e
 
-        access_token = post_json['access_token']
-        self.headers = {
-            'authorization': access_token
-        }
-        self.refresh_token = post_json['refresh_token']
+            access_token = post_json['access_token']
+            self.headers = {
+                'authorization': access_token
+            }
+            self.refresh_token = post_json['refresh_token']
+        finally:
+            common.LOCK.release()
 
     def create(self, parent_file_id):
+        part_info_list = []
+        for i in range(0, math.ceil(self.filesize / self.chunk_size)):
+            part_info_list.append({
+                'part_number': i + 1
+            })
         create_data = {
-            "auto_rename": True,
-            "content_hash": self.hash,
-            "content_hash_name": 'sha1',
             "drive_id": self.drive_id,
-            "hidden": False,
-            "name": self.filename,
+            "part_info_list": part_info_list,
             "parent_file_id": parent_file_id,
+            "name": self.filename,
             "type": "file",
-            "size": self.filesize
+            "check_name_mode": "auto_rename",
+            "size": self.filesize,
+            "content_hash": self.hash,
+            "content_hash_name": 'sha1'
         }
         create_post = requests.post(
             'https://api.aliyundrive.com/v2/file/create',
@@ -104,19 +114,24 @@ class AliyunDrive:
             exit()
         return create_post_json
 
-    def upload(self, upload_url):
+    def upload(self, part_info_list):
+
         with open(self.realpath, "rb") as f:
-            total_size = os.fstat(f.fileno()).st_size
-            fs = tqdm.wrapattr(f, "read", desc='正在上传', miniters=1, total=total_size, ascii=True)
-            with fs as f_iter:
-                res = requests.put(
-                    url=upload_url,
-                    data=UploadChunksIterator(f_iter, total_size=total_size),
-                    verify=False
-                )
-                if 400 <= res.status_code < 600:
-                    print_error(res.text)
-                    res.raise_for_status()
+            index = 0
+            with tqdm.wrapattr(f, "read", desc='正在上传', miniters=1, total=self.filesize, ascii=True) as fs:
+                while index <= len(part_info_list) - 1:
+                    upload_url = part_info_list[index]['upload_url']
+                    total_size = min(self.chunk_size, self.filesize)
+                    fs.seek(index * total_size)
+                    res = requests.put(
+                        url=upload_url,
+                        data=UploadChunksIterator(fs, total_size=total_size),
+                        verify=False
+                    )
+                    if 400 <= res.status_code < 600:
+                        print_error(res.text)
+                        res.raise_for_status()
+                    index += 1
 
     def complete(self, file_id, upload_id):
         complete_data = {
@@ -169,3 +184,25 @@ class AliyunDrive:
             print_error('无法刷新AccessToken，准备退出')
             exit()
         return create_post_json.get('file_id')
+
+    def get_parent_folder_id(self, filepath):
+        print_info('检索目录中')
+        filepath_split = (self.root_path + filepath.lstrip(os.sep)).split(os.sep)
+        del filepath_split[len(filepath_split) - 1]
+        path_name = os.sep.join(filepath_split)
+        if not path_name in common.DATA['folder_id_dict']:
+            parent_folder_id = 'root'
+            parent_folder_name = os.sep
+            if len(filepath_split) > 0:
+                for folder in filepath_split:
+                    if folder == '':
+                        continue
+                    parent_folder_id = self.create_folder(folder, parent_folder_id)
+                    parent_folder_name = parent_folder_name.rstrip(os.sep) + os.sep + folder
+                    common.DATA['folder_id_dict'][parent_folder_name] = parent_folder_id
+        else:
+            parent_folder_id = common.DATA['folder_id_dict'][path_name]
+            print_info('已存在目录，无需创建')
+
+        print_info('目录id获取成功{parent_folder_id}'.format(parent_folder_id=parent_folder_id))
+        return parent_folder_id

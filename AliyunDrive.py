@@ -107,14 +107,16 @@ class AliyunDrive:
     def upload(self, upload_url):
         with open(self.realpath, "rb") as f:
             total_size = os.fstat(f.fileno()).st_size
-            f = tqdm.wrapattr(f, "read", desc='正在上传', miniters=1, total=total_size, ascii=True)
-            with f as f_iter:
+            fs = tqdm.wrapattr(f, "read", desc='正在上传', miniters=1, total=total_size, ascii=True)
+            with fs as f_iter:
                 res = requests.put(
                     url=upload_url,
                     data=UploadChunksIterator(f_iter, total_size=total_size),
                     verify=False
                 )
-                res.raise_for_status()
+                if 400 <= res.status_code < 600:
+                    print_error(res.text)
+                    res.raise_for_status()
 
     def complete(self, file_id, upload_id):
         complete_data = {

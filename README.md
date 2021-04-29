@@ -50,7 +50,8 @@ python3 get-pip.py
 | MULTITHREADING | 是否启用多线程| true/false     |   |
 | MAX_WORKERS    | 线程池最大线程数，请根据自己机器填写              | 5              |   |
 
-> PS:如使用多线程上传，多任务并发，可能会造成网盘创建多个相同目录的问题，事后请自行检查删除
+> PS:如使用多线程上传，多任务并发，可能会造成网盘创建多个相同目录的问题，事后请自行检查删除  
+> 阿里云盘官方最大上传文件大小为5368709120字节，即5GB，超过会上传失败
 
 ### 运行
 ```shell
@@ -68,6 +69,7 @@ python3 main.py /www/wwwroot/download/
 ```shell
 python3 main.py /www/lixiaoen.jpg
 ```
+
 ## 更新
 ```shell
 cd ~/aliyundrive-uploader
@@ -76,7 +78,6 @@ git reset --hard origin/master
 git pull
 ```
 ## 文件解读
-
 * `config.json` 
   * 脚本配置文件
 * `task.json`

@@ -10,11 +10,11 @@ import random
 import time
 
 
-def get_hash(filepath):
+def get_hash(filepath, block_size=64 * 1024):
     with open(filepath, 'rb') as f:
         sha1 = hashlib.sha1()
         while True:
-            data = f.readline()
+            data = f.read(block_size)
             if not data:
                 break
             sha1.update(data)
@@ -45,6 +45,7 @@ def get_all_file_relative(path):
         else:
             result.append(i)
     return result
+
 
 def print_info(message):
     i = random.randint(34, 37)

@@ -81,7 +81,7 @@ def save_task(task):
 # 配置信息
 try:
     with open(os.getcwd() + '/config.json', 'rb') as f:
-        config = json.loads(f.read())
+        config = json.loads(f.read().decode('utf-8'))
         REFRESH_TOKEN = config.get('REFRESH_TOKEN')
         FILE_PATH = config.get('FILE_PATH')
         DRIVE_ID = config.get('DRIVE_ID')

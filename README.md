@@ -38,17 +38,20 @@ python3 get-pip.py
   "ROOT_PATH": "网盘目录",
   "FILE_PATH": "D:\\Pictures\\",
   "MULTITHREADING": false,
-  "MAX_WORKERS": 5
+  "MAX_WORKERS": 5,
+  "CHUNK_SIZE": 104857600
 }
 ```
-| 参数             | 注释                              | 值              |   |
-|----------------|---------------------------------|----------------|---|
-| REFRESH_TOKEN  | 阿里云盘刷新的token                 |                |   |
-| DRIVE_ID       | 阿里云盘驱动ID，目前不知道做何使用的，可能后续官方有新想法吧 |                |   |
-| ROOT_PATH      | 阿里云盘目录                        |    我的照片      |   |
-| FILE_PATH      | 文件夹目录，填写绝对路径                    | D:\\Pictures\\ |   |
-| MULTITHREADING | 是否启用多线程| true/false     |   |
-| MAX_WORKERS    | 线程池最大线程数，请根据自己机器填写              | 5              |   |
+| 参数             | 注释                               |   值           |
+|-----------------|-----------------------------------|----------------|
+| REFRESH_TOKEN  | 阿里云盘刷新的token                  |                |   
+| DRIVE_ID       | 阿里云盘驱动ID，目前不知道做何使用的，可能后续官方有新想法吧 ||  
+| ROOT_PATH      | 阿里云盘目录                         |    我的照片     |  
+| FILE_PATH      | 文件夹目录，填写绝对路径               | D:\\Pictures\\ | 
+| MULTITHREADING | 是否启用多线程                       | true/false     |
+| MAX_WORKERS    | 线程池最大线程数，请根据自己机器填写     | 5    |  
+| CHUNK_SIZE    | 分块上传大小，请根据自己机器填写，单位：字节 | 104857600       |   
+|   RESUME      |   断点续传，分块续传                 | true/false       |   
 
 
 ### 运行

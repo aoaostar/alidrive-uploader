@@ -4,5 +4,7 @@
   "ROOT_PATH": "网盘目录",
   "FILE_PATH": "D:\\Pictures\\",
   "MULTITHREADING": false,
-  "MAX_WORKERS": 5
+  "MAX_WORKERS": 5,
+  "CHUNK_SIZE": 104857600,
+  "RESUME":false
 }

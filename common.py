@@ -5,14 +5,17 @@
 # | Author: 李小恩 <i@abcyun.cc>
 # +-------------------------------------------------------------------
 import hashlib
+import json
 import os
 import random
 import threading
 import time
+from xml.dom.minidom import parseString
 
 LOCK = threading.Lock()
 DATA = {
-    'folder_id_dict': {}
+    'folder_id_dict': {},
+    'tasks': {}
 }
 
 
@@ -84,3 +87,48 @@ def log(message):
         os.mkdir(os.path.dirname(file))
     with open(file, 'a') as f:
         f.write('【{date}】{message}\n'.format(date=date(time.time()), message=message))
+
+
+def get_xml_tag_value(xml_string, tag_name):
+    DOMTree = parseString(xml_string)
+    DOMTree = DOMTree.documentElement
+    tag = DOMTree.getElementsByTagName(tag_name)
+    if len(tag) > 0:
+        for node in tag[0].childNodes:
+            if node.nodeType == node.TEXT_NODE:
+                return node.data
+    return False
+
+
+def load_task():
+    LOCK.acquire()
+    try:
+        with open(os.getcwd() + '/tasks.json', 'rb') as f:
+            task = f.read().decode('utf-8')
+            return json.loads(task)
+    except Exception:
+        return {}
+    finally:
+        LOCK.release()
+
+
+def save_task(task):
+    LOCK.acquire()
+    try:
+        with open(os.getcwd() + '/tasks.json', 'w') as f:
+            f.write(json.dumps(task))
+            f.flush()
+    finally:
+        LOCK.release()
+
+
+def read_in_chunks(file_object, chunk_size=16 * 1024, total_size=10 * 1024 * 1024):
+    load_size = 0
+    while True:
+        if load_size >= total_size:
+            break
+        data = file_object.read(chunk_size)
+        if not data:
+            break
+        load_size += 16 * 1024
+        yield data

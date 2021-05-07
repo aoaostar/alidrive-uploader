@@ -71,7 +71,8 @@ def upload_file(path, filepath):
 
 # 配置信息
 try:
-    with open(os.getcwd() + '/config.json', 'rb') as f:
+    
+    with open(os.getcwd() + '/aliyundrive-uploader/config.json', 'rb') as f:
         config = {
             "REFRESH_TOKEN": "refresh_token",
             "DRIVE_ID": "drive_id",
@@ -97,7 +98,18 @@ except Exception as e:
     print_error('请配置好config.json后重试')
     raise e
 # 命令行参数上传
-if len(sys.argv) == 2:
+if len(sys.argv) == 3:
+    ROOT_PATH=sys.argv[2].replace('/', os.sep).replace('\\\\', os.sep).rstrip(os.sep) + os.sep
+    if os.path.isdir(sys.argv[1]):
+        # 目录上传
+        FILE_PATH = sys.argv[1]
+        file_list = get_all_file_relative(FILE_PATH)
+    else:
+        # 单文件上传
+        FILE_PATH = os.path.dirname(sys.argv[1])
+        file_list = [os.path.basename(sys.argv[1])]
+    common.DATA['tasks'] = {}
+elif len(sys.argv) == 2:
     if os.path.isdir(sys.argv[1]):
         # 目录上传
         FILE_PATH = sys.argv[1]

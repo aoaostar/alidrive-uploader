@@ -77,7 +77,7 @@ try:
             "REFRESH_TOKEN": "refresh_token",
             "DRIVE_ID": "drive_id",
             "ROOT_PATH": "root",
-            "FILE_PATH": os.getcwd(),
+            "FILE_PATH": os.path.dirname(os.path.realpath(__file__),
             "MULTITHREADING": False,
             "MAX_WORKERS": 5,
             "CHUNK_SIZE": 104857600,

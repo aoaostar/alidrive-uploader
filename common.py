@@ -82,7 +82,7 @@ def date(timestamp):
 
 
 def log(message):
-    file = os.path.dirname(os.path.realpath(__file__) + '/log/' + time.strftime("%Y-%m-%d", time.localtime()) + '.log'
+    file = os.path.dirname(os.path.realpath(__file__)) + '/log/' + time.strftime("%Y-%m-%d", time.localtime()) + '.log'
     if not os.path.exists(os.path.dirname(file)):
         os.mkdir(os.path.dirname(file))
     with open(file, 'a') as f:
@@ -103,7 +103,7 @@ def get_xml_tag_value(xml_string, tag_name):
 def load_task():
     LOCK.acquire()
     try:
-        with open(os.path.dirname(os.path.realpath(__file__) + '/tasks.json', 'rb') as f:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/tasks.json', 'rb') as f:
             task = f.read().decode('utf-8')
             return json.loads(task)
     except Exception:
@@ -115,7 +115,7 @@ def load_task():
 def save_task(task):
     LOCK.acquire()
     try:
-        with open(os.path.dirname(os.path.realpath(__file__) + '/tasks.json', 'w') as f:
+        with open(os.path.dirname(os.path.realpath(__file__)) + '/tasks.json', 'w') as f:
             f.write(json.dumps(task))
             f.flush()
     finally:

@@ -76,10 +76,10 @@ class AliyunDrive:
             try:
                 post_json = post.json()
                 # 刷新配置中的token
-                with open(os.getcwd() + '/config.json', 'rb') as f:
+                with open(os.path.dirname(os.path.realpath(__file__)) + '/config.json', 'rb') as f:
                     config = json.loads(f.read().decode('utf-8'))
                 config['REFRESH_TOKEN'] = post_json['refresh_token']
-                with open(os.getcwd() + '/config.json', 'w') as f:
+                with open(os.path.dirname(os.path.realpath(__file__)) + '/config.json', 'w') as f:
                     f.write(json.dumps(config))
                     f.flush()
 

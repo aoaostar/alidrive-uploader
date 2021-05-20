@@ -70,7 +70,10 @@ python3 main.py /www/wwwroot/download/
 ```shell
 python3 main.py /www/lixiaoen.jpg
 ```
-
+> 指定上传目录
+```shell
+python3 main.py /www/lixiaoen.jpg /Backup
+```
 ## 更新
 ```shell
 cd ~/aliyundrive-uploader

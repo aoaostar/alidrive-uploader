@@ -100,14 +100,15 @@ except Exception as e:
 # 命令行参数上传
 if len(sys.argv) == 3:
     ROOT_PATH=sys.argv[2].replace('/', os.sep).replace('\\\\', os.sep).rstrip(os.sep) + os.sep
+    abspath=os.path.abspath(sys.argv[1])
     if os.path.isdir(sys.argv[1]):
         # 目录上传
-        FILE_PATH = sys.argv[1]
+        FILE_PATH = abspath
         file_list = get_all_file_relative(FILE_PATH)
     else:
         # 单文件上传
-        FILE_PATH = os.path.dirname(sys.argv[1])
-        file_list = [os.path.basename(sys.argv[1])]
+        FILE_PATH = os.path.dirname(abspath)
+        file_list = [os.path.basename(abspath)]
     common.DATA['tasks'] = {}
 elif len(sys.argv) == 2:
     if os.path.isdir(sys.argv[1]):

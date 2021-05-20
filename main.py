@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # +-------------------------------------------------------------------
 # | 阿里云盘上传Python3脚本
@@ -71,13 +72,12 @@ def upload_file(path, filepath):
 
 # 配置信息
 try:
-    
-    with open(os.getcwd() + '/aliyundrive-uploader/config.json', 'rb') as f:
+    with open(os.path.dirname(os.path.realpath(__file__)) + '/config.json', 'rb') as f:
         config = {
             "REFRESH_TOKEN": "refresh_token",
             "DRIVE_ID": "drive_id",
             "ROOT_PATH": "root",
-            "FILE_PATH": os.getcwd(),
+            "FILE_PATH": os.path.dirname(os.path.realpath(__file__)),
             "MULTITHREADING": False,
             "MAX_WORKERS": 5,
             "CHUNK_SIZE": 104857600,
@@ -111,14 +111,15 @@ if len(sys.argv) == 3:
         file_list = [os.path.basename(abspath)]
     common.DATA['tasks'] = {}
 elif len(sys.argv) == 2:
-    if os.path.isdir(sys.argv[1]):
+    abspath=os.path.abspath(sys.argv[1])
+    if os.path.isdir(abspath):
         # 目录上传
-        FILE_PATH = sys.argv[1]
+        FILE_PATH = abspath
         file_list = get_all_file_relative(FILE_PATH)
     else:
         # 单文件上传
-        FILE_PATH = os.path.dirname(sys.argv[1])
-        file_list = [os.path.basename(sys.argv[1])]
+        FILE_PATH = os.path.dirname(abspath)
+        file_list = [os.path.basename(abspath)]
     common.DATA['tasks'] = {}
 else:
     file_list = get_all_file_relative(FILE_PATH)

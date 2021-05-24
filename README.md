@@ -100,7 +100,8 @@ git pull
 
 ## 编译
 > 需要配合conda或virtualenv使用，请自行学习相关知识
-###以virtualenv为例
+
+### 以virtualenv为例
 * 安装virtualenv
 ```shell
 pip install virtualenv

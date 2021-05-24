@@ -6,5 +6,6 @@
   "MULTITHREADING": false,
   "MAX_WORKERS": 5,
   "CHUNK_SIZE": 104857600,
-  "RESUME":false
+  "RESUME":false,
+  "OVERWRITE":false
 }

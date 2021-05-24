@@ -7,24 +7,23 @@
 import json
 import math
 import os
+import sys
 import time
-from hashlib import sha1
-
 import requests
+from hashlib import sha1
 from tqdm import tqdm
 
 import common
+from common import LOCK, DATA, print_info, get_running_path, print_error, print_success, print_warn
 
 requests.packages.urllib3.disable_warnings()
-from common import print_warn, print_info, print_error, print_success, get_hash
 
 
 class AliyunDrive:
-    def __init__(self, drive_id, root_path, refresh_token, chunk_size=10485760):
+    def __init__(self, drive_id, root_path, chunk_size=10485760):
         self.start_time = time.time()
         self.drive_id = drive_id
         self.root_path = root_path
-        self.refresh_token = refresh_token
         self.chunk_size = chunk_size
         self.filepath = None
         self.filepath_hash = None
@@ -36,6 +35,8 @@ class AliyunDrive:
         self.upload_id = 0
         self.file_id = 0
         self.part_number = 0
+        self.filesize = 0
+        self.headers = {}
 
     def load_file(self, filepath, realpath):
         self.filepath = filepath
@@ -43,7 +44,7 @@ class AliyunDrive:
         self.realpath = realpath
         self.filename = os.path.basename(realpath)
         print_info('【{filename}】正在校检文件中，耗时与文件大小有关'.format(filename=self.filename))
-        self.hash = get_hash(self.realpath)
+        self.hash = common.get_hash(self.realpath)
         self.filesize = os.path.getsize(self.realpath)
 
         self.part_info_list = []
@@ -62,9 +63,9 @@ class AliyunDrive:
         print_info(message)
 
     def token_refresh(self):
-        common.LOCK.acquire()
+        LOCK.acquire()
         try:
-            data = {"refresh_token": self.refresh_token}
+            data = {"refresh_token": DATA['REFRESH_TOKEN']}
             post = requests.post(
                 'https://websv.aliyundrive.com/token/refresh',
                 data=json.dumps(data),
@@ -76,10 +77,10 @@ class AliyunDrive:
             try:
                 post_json = post.json()
                 # 刷新配置中的token
-                with open(os.path.dirname(os.path.realpath(__file__)) + '/config.json', 'rb') as f:
+                with open(get_running_path('/config.json'), 'rb') as f:
                     config = json.loads(f.read().decode('utf-8'))
                 config['REFRESH_TOKEN'] = post_json['refresh_token']
-                with open(os.path.dirname(os.path.realpath(__file__)) + '/config.json', 'w') as f:
+                with open(get_running_path('/config.json'), 'w') as f:
                     f.write(json.dumps(config))
                     f.flush()
 
@@ -89,11 +90,12 @@ class AliyunDrive:
 
             access_token = post_json['access_token']
             self.headers = {
-                'authorization': access_token
+                'authorization': access_token,
+                'content-type': 'application/json;charset=UTF-8'
             }
-            self.refresh_token = post_json['refresh_token']
+            DATA['REFRESH_TOKEN'] = post_json['refresh_token']
         finally:
-            common.LOCK.release()
+            LOCK.release()
 
     def create(self, parent_file_id):
         create_data = {
@@ -107,25 +109,28 @@ class AliyunDrive:
             "content_hash": self.hash,
             "content_hash_name": 'sha1'
         }
-        create_post = requests.post(
+        # 覆盖已有文件
+        if DATA['OVERWRITE']:
+            create_data['check_name_mode'] = 'refuse'
+        request_post = requests.post(
             'https://api.aliyundrive.com/v2/file/create',
             data=json.dumps(create_data),
             headers=self.headers,
             verify=False
         )
-        create_post_json = create_post.json()
-        if create_post_json.get('code') == 'AccessTokenInvalid':
-            print_info('AccessToken已失效，尝试刷新AccessToken中')
-            if self.token_refresh():
-                print_info('AccessToken刷新成功，返回创建上传任务')
+        requests_post_json = request_post.json()
+        self.check_auth(requests_post_json, lambda: self.create(parent_file_id))
+        # 覆盖已有文件
+        if DATA['OVERWRITE'] and requests_post_json.get('exist'):
+            if self.recycle(requests_post_json.get('file_id')):
+                print_info('【%s】原有文件回收成功' % self.filename)
+                print_info('【%s】重新上传新文件中' % self.filename)
                 return self.create(parent_file_id)
-            print_error('无法刷新AccessToken，准备退出')
-            exit()
 
-        self.part_upload_url_list = create_post_json.get('part_info_list')
-        self.file_id = create_post_json.get('file_id')
-        self.upload_id = create_post_json.get('upload_id')
-        return create_post_json
+        self.part_upload_url_list = requests_post_json.get('part_info_list', [])
+        self.file_id = requests_post_json.get('file_id')
+        self.upload_id = requests_post_json.get('upload_id')
+        return requests_post_json
 
     def get_upload_url(self):
         print_info('【%s】上传地址已失效正在获取新的上传地址' % self.filename)
@@ -142,13 +147,7 @@ class AliyunDrive:
             verify=False
         )
         requests_post_json = requests_post.json()
-        if requests_post_json.get('code') == 'AccessTokenInvalid':
-            print_info('AccessToken已失效，尝试刷新AccessToken中')
-            if self.token_refresh():
-                print_info('AccessToken刷新成功，返回创建上传任务')
-                return self.get_upload_url()
-            print_error('无法刷新AccessToken，准备退出')
-            exit()
+        self.check_auth(requests_post_json, self.get_upload_url)
         print_info('【%s】上传地址刷新成功' % self.filename)
         return requests_post_json.get('part_info_list')
 
@@ -183,12 +182,12 @@ class AliyunDrive:
                             print_error(res.text)
                             res.raise_for_status()
                     self.part_number += 1
-                    common.DATA['tasks'][self.filepath_hash]['part_number'] = self.part_number
-                    common.DATA['tasks'][self.filepath_hash]['drive_id'] = self.drive_id
-                    common.DATA['tasks'][self.filepath_hash]['file_id'] = self.file_id
-                    common.DATA['tasks'][self.filepath_hash]['upload_id'] = self.upload_id
-                    common.DATA['tasks'][self.filepath_hash]['chunk_size'] = self.chunk_size
-                    common.save_task(common.DATA['tasks'])
+                    DATA['tasks'][self.filepath_hash]['part_number'] = self.part_number
+                    DATA['tasks'][self.filepath_hash]['drive_id'] = self.drive_id
+                    DATA['tasks'][self.filepath_hash]['file_id'] = self.file_id
+                    DATA['tasks'][self.filepath_hash]['upload_id'] = self.upload_id
+                    DATA['tasks'][self.filepath_hash]['chunk_size'] = self.chunk_size
+                    common.save_task(DATA['tasks'])
 
     def complete(self):
         complete_data = {
@@ -202,16 +201,12 @@ class AliyunDrive:
             verify=False
         )
 
-        complete_post_json = complete_post.json()
-        if complete_post_json.get('code') == 'AccessTokenInvalid':
-            print_info('AccessToken已失效，尝试刷新AccessToken中')
-            if self.token_refresh():
-                print_info('AccessToken刷新成功，返回创建上传任务')
-                return self.complete()
-            print_error('无法刷新AccessToken，准备退出')
-            exit()
+        requests_post_json = complete_post.json()
+        self.check_auth(requests_post_json, self.complete)
         s = time.time() - self.start_time
-        if 'file_id' in complete_post_json:
+        print(requests_post_json)
+        print(complete_data)
+        if 'file_id' in requests_post_json:
             print_success('【{filename}】上传成功！消耗{s}秒'.format(filename=self.filename, s=s))
             return True
         else:
@@ -232,22 +227,16 @@ class AliyunDrive:
             headers=self.headers,
             verify=False
         )
-        create_post_json = create_post.json()
-        if create_post_json.get('code') == 'AccessTokenInvalid':
-            print_info('AccessToken已失效，尝试刷新AccessToken中')
-            if self.token_refresh():
-                print_info('AccessToken刷新成功，返回创建上传任务')
-                return self.create_folder(folder_name, parent_folder_id)
-            print_error('无法刷新AccessToken，准备退出')
-            exit()
-        return create_post_json.get('file_id')
+        requests_post_json = create_post.json()
+        self.check_auth(requests_post_json, lambda: self.create_folder(folder_name, parent_folder_id))
+        return requests_post_json.get('file_id')
 
     def get_parent_folder_id(self, filepath):
         print_info('检索目录中')
         filepath_split = (self.root_path + filepath.lstrip(os.sep)).split(os.sep)
         del filepath_split[len(filepath_split) - 1]
         path_name = os.sep.join(filepath_split)
-        if not path_name in common.DATA['folder_id_dict']:
+        if path_name not in DATA['folder_id_dict']:
             parent_folder_id = 'root'
             parent_folder_name = os.sep
             if len(filepath_split) > 0:
@@ -256,10 +245,48 @@ class AliyunDrive:
                         continue
                     parent_folder_id = self.create_folder(folder, parent_folder_id)
                     parent_folder_name = parent_folder_name.rstrip(os.sep) + os.sep + folder
-                    common.DATA['folder_id_dict'][parent_folder_name] = parent_folder_id
+                    DATA['folder_id_dict'][parent_folder_name] = parent_folder_id
         else:
-            parent_folder_id = common.DATA['folder_id_dict'][path_name]
+            parent_folder_id = DATA['folder_id_dict'][path_name]
             print_info('已存在目录，无需创建')
 
         print_info('目录id获取成功{parent_folder_id}'.format(parent_folder_id=parent_folder_id))
         return parent_folder_id
+
+    def recycle(self,file_id):
+        # https://api.aliyundrive.com/v2/batch
+        requests_data = {
+            "requests": [
+                {
+                    "body": {
+                        "drive_id": self.drive_id,
+                        "file_id": file_id
+                    },
+                    "headers": {
+                        "Content-Type": "application/json"
+                    },
+                    "id": file_id,
+                    "method": "POST",
+                    "url": "/recyclebin/trash"
+                }
+            ],
+            "resource": "file"
+        }
+        requests_post = requests.post(
+            'https://api.aliyundrive.com/v2/batch',
+            data=json.dumps(requests_data),
+            headers=self.headers,
+            verify=False
+        )
+        requests_post_json = requests_post.json()
+        self.check_auth(requests_post_json, lambda:self.recycle(file_id))
+        return True
+
+    def check_auth(self, response_json, func):
+        if response_json.get('code') == 'AccessTokenInvalid':
+            print_info('AccessToken已失效，尝试刷新AccessToken中')
+            if self.token_refresh():
+                print_info('AccessToken刷新成功，返回创建上传任务')
+                return func()
+            print_error('无法刷新AccessToken，准备退出')
+            sys.exit()

@@ -8,15 +8,32 @@ import hashlib
 import json
 import os
 import random
+import sys
 import threading
 import time
 from xml.dom.minidom import parseString
 
 LOCK = threading.Lock()
 DATA = {
+    'config': {},
     'folder_id_dict': {},
     'tasks': {}
 }
+
+
+# 处理路径
+def qualify_path(path):
+    if not path:
+        return ''
+    return path.replace('/', os.sep).replace('\\\\', os.sep).rstrip(os.sep) + os.sep
+
+
+# 获取运行目录
+def get_running_path(path=''):
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable) + path
+    elif __file__:
+        return os.path.dirname(__file__) + path
 
 
 def get_hash(filepath, block_size=2 * 1024 * 1024):
@@ -82,7 +99,7 @@ def date(timestamp):
 
 
 def log(message):
-    file = os.path.dirname(os.path.realpath(__file__)) + '/log/' + time.strftime("%Y-%m-%d", time.localtime()) + '.log'
+    file = get_running_path('/log/' + time.strftime("%Y-%m-%d", time.localtime()) + '.log')
     if not os.path.exists(os.path.dirname(file)):
         os.mkdir(os.path.dirname(file))
     with open(file, 'a') as f:
@@ -103,7 +120,7 @@ def get_xml_tag_value(xml_string, tag_name):
 def load_task():
     LOCK.acquire()
     try:
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/tasks.json', 'rb') as f:
+        with open(get_running_path('/tasks.json'), 'rb') as f:
             task = f.read().decode('utf-8')
             return json.loads(task)
     except Exception:
@@ -115,7 +132,7 @@ def load_task():
 def save_task(task):
     LOCK.acquire()
     try:
-        with open(os.path.dirname(os.path.realpath(__file__)) + '/tasks.json', 'w') as f:
+        with open(get_running_path('/tasks.json'), 'w') as f:
             f.write(json.dumps(task))
             f.flush()
     finally:

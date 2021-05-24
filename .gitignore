@@ -6,4 +6,8 @@ filelist.json
 .idea
 __pycache__
 task.json
+tasks.json
 old
+dist
+build
+*.spec

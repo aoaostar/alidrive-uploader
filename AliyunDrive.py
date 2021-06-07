@@ -204,8 +204,8 @@ class AliyunDrive:
         requests_post_json = complete_post.json()
         self.check_auth(requests_post_json, self.complete)
         s = time.time() - self.start_time
-        print(requests_post_json)
-        print(complete_data)
+        # print(requests_post_json)
+        # print(complete_data)
         if 'file_id' in requests_post_json:
             print_success('【{filename}】上传成功！消耗{s}秒'.format(filename=self.filename, s=s))
             return True

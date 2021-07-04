@@ -112,22 +112,22 @@ if len(sys.argv) == 3:
     abspath = os.path.abspath(sys.argv[1])
     if os.path.isdir(sys.argv[1]):
         # 目录上传
-        FILE_PATH = abspath
-        file_list = get_all_file_relative(FILE_PATH)
+        DATA['FILE_PATH'] = abspath
+        file_list = get_all_file_relative(DATA['FILE_PATH'])
     else:
         # 单文件上传
-        FILE_PATH = os.path.dirname(abspath)
+        DATA['FILE_PATH'] = os.path.dirname(abspath)
         file_list = [os.path.basename(abspath)]
     DATA['tasks'] = {}
 elif len(sys.argv) == 2:
     abspath = os.path.abspath(sys.argv[1])
     if os.path.isdir(abspath):
         # 目录上传
-        FILE_PATH = abspath
-        file_list = get_all_file_relative(FILE_PATH)
+        DATA['FILE_PATH'] = abspath
+        file_list = get_all_file_relative(DATA['FILE_PATH'])
     else:
         # 单文件上传
-        FILE_PATH = os.path.dirname(abspath)
+        DATA['FILE_PATH'] = os.path.dirname(abspath)
         file_list = [os.path.basename(abspath)]
     DATA['tasks'] = {}
 else:

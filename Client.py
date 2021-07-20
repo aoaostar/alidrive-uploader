@@ -72,10 +72,16 @@ class Client():
             raise e
 
     def init_command_line_parameter(self):
+        unset_keys = []
+
         for k in range(len(sys.argv)):
             if sys.argv[k] == '--resident' or sys.argv[k] == '-r':
                 DATA['config']['RESIDENT'] = True
-                del sys.argv[k]
+                unset_keys.append(k)
+
+        for v in unset_keys:
+            del sys.argv[v]
+
         # 命令分配
         if len(sys.argv) == 3:
             # 网盘保存路径

@@ -11,3 +11,4 @@ old
 dist
 build
 *.spec
+db.db

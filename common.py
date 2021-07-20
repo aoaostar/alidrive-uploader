@@ -2,22 +2,37 @@
 # +-------------------------------------------------------------------
 # | 公共函数类
 # +-------------------------------------------------------------------
-# | Author: 李小恩 <i@abcyun.cc>
+# | Author: Pluto <i@abcyun.cc>
 # +-------------------------------------------------------------------
+
 import hashlib
 import json
 import os
-import random
 import sys
 import threading
 import time
 from xml.dom.minidom import parseString
 
+from sqlite import sqlite
+
 LOCK = threading.Lock()
 DATA = {
     'config': {},
     'folder_id_dict': {},
-    'tasks': {}
+    'task_template': {
+        "filepath": None,
+        "filesize": 0,
+        "hash": '',
+        "status": 0,
+        "create_time": time.time(),
+        "finish_time": 0,
+        "spend_time": 0,
+        "drive_id": '0',
+        "file_id": '0',
+        "upload_id": '0',
+        "part_number": 0,
+        "chunk_size": 104857600,
+    }
 }
 
 
@@ -34,6 +49,57 @@ def get_running_path(path=''):
         return os.path.dirname(sys.executable) + path
     elif __file__:
         return os.path.dirname(__file__) + path
+
+
+def get_config_file_path():
+    return get_running_path('/config.json')
+
+
+def get_db_file_path():
+    return get_running_path('/db.db')
+
+
+# 读取配置项
+# @param key 取指定配置项，若不传则取所有配置[可选]
+def get_config(key=None):
+    # 判断是否从文件读取配置
+    if not os.path.exists(get_config_file_path()): return None
+
+    with open(get_config_file_path(), 'rb') as f:
+        f_body = f.read().decode('utf-8')
+    if not f_body: return None
+    config = json.loads(f_body)
+    for value in [
+        'MULTITHREADING',
+        'RESUME',
+        'OVERWRITE',
+        'RESIDENT',
+    ]:
+        if value in config:
+            DATA['config'][value] = bool(config[value])
+    config['ROOT_PATH'] = qualify_path(config.get('ROOT_PATH')).rstrip(os.sep)
+    # 取指定配置项
+    if key:
+        if key in config: return config[key]
+        return None
+    return config
+
+
+def set_config(key, value):
+    config = get_config()
+    # 是否需要初始化配置项
+    if not config: config = {}
+    # 是否需要设置配置值
+    if key:
+        config[key] = value
+    with open(get_config_file_path(), 'w') as f:
+        f.write(json.dumps(config))
+        f.flush()
+    return True
+
+
+def get_db():
+    return sqlite().dbfile(get_db_file_path())
 
 
 def get_hash(filepath, block_size=2 * 1024 * 1024):
@@ -61,6 +127,8 @@ def get_all_file(path):
 
 def get_all_file_relative(path):
     result = []
+    if not os.path.exists(path):
+        return result
     get_dir = os.listdir(path)
     for i in get_dir:
         sub_dir = os.path.join(path, i)
@@ -73,32 +141,47 @@ def get_all_file_relative(path):
     return result
 
 
-def print_info(message):
-    i = random.randint(34, 37)
-    log(message)
+def print_info(message, id=None):
+    # i = random.randint(34, 37)
+    i = 36
+    log(message, id)
     print('\033[7;30;{i}m{message}\033[0m'.format(message=message, i=i))
 
 
-def print_warn(message):
-    log(message)
+def print_warn(message, id=None):
+    log(message, id)
     print('\033[7;30;33m{message}\033[0m'.format(message=message))
 
 
-def print_error(message):
-    log(message)
+def print_error(message, id=None):
+    log(message, id)
     print('\033[7;30;31m{message}\033[0m'.format(message=message))
 
 
-def print_success(message):
-    log(message)
+def print_success(message, id=None):
+    log(message, id)
     print('\033[7;30;32m{message}\033[0m'.format(message=message))
 
 
-def date(timestamp):
+def date(timestamp=None):
+    if not timestamp:
+        timestamp = get_timestamp()
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp))
 
 
-def log(message):
+def get_timestamp():
+    return int(time.time())
+
+
+def log(message, id=None):
+    if not id is None:
+        db = get_db()
+        idata = {
+            'task_id': id,
+            'content': message,
+            'create_time': get_timestamp(),
+        }
+        db.table('task_log').insert(idata)
     file = get_running_path('/log/' + time.strftime("%Y-%m-%d", time.localtime()) + '.log')
     if not os.path.exists(os.path.dirname(file)):
         os.mkdir(os.path.dirname(file))
@@ -118,25 +201,18 @@ def get_xml_tag_value(xml_string, tag_name):
 
 
 def load_task():
-    LOCK.acquire()
-    try:
-        with open(get_running_path('/tasks.json'), 'rb') as f:
-            task = f.read().decode('utf-8')
-            return json.loads(task)
-    except Exception:
-        return {}
-    finally:
-        LOCK.release()
+    db = get_db()
+    return db.table('task').where('finish_time=?', 0).order('create_time asc').limit('25').select()
 
 
-def save_task(task):
-    LOCK.acquire()
-    try:
-        with open(get_running_path('/tasks.json'), 'w') as f:
-            f.write(json.dumps(task))
-            f.flush()
-    finally:
-        LOCK.release()
+def save_task(task_id, udata):
+    db = get_db()
+    return db.table('task').where('id=?', (task_id,)).update(udata)
+
+
+def create_task(data):
+    db = get_db()
+    db.table('task').insert(data)
 
 
 def read_in_chunks(file_object, chunk_size=16 * 1024, total_size=10 * 1024 * 1024):

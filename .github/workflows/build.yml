@@ -1,0 +1,33 @@
+name: build
+
+on:
+  push:
+  workflow_dispatch:
+  
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: build
+      run: |
+        pip install pyinstaller
+        pyinstaller --onefile main.py
+        pyinstaller -F main.py
+        mv ./dist/main ./dist/aliyundrive-uploader_linux_amd64
+    - name: Upload artifacts linux_amd64
+      uses: actions/upload-artifact@v2
+      with:
+        name: aliyundrive-uploader_linux_amd64
+        path: ./dist/aliyundrive-uploader_linux_amd64

@@ -33,7 +33,6 @@ class AliyunDrive:
         self.root_path = root_path
         self.chunk_size = chunk_size
         self.filepath = None
-        self.filepath_hash = None
         self.realpath = None
         self.filename = None
         self.hash = None
@@ -148,8 +147,8 @@ class AliyunDrive:
         # 覆盖已有文件
         if DATA['config']['OVERWRITE'] and requests_post_json.get('exist'):
             if self.recycle(requests_post_json.get('file_id')):
-                self.print('【%s】原有文件回收成功' % self.filename, self.id, 'info')
-                self.print('【%s】重新上传新文件中' % self.filename, self.id, 'info')
+                self.print('【%s】原有文件回收成功' % self.filename, 'info')
+                self.print('【%s】重新上传新文件中' % self.filename, 'info')
                 return self.create(parent_file_id)
 
         self.part_upload_url_list = requests_post_json.get('part_info_list', [])
@@ -317,6 +316,6 @@ class AliyunDrive:
             self.print('无法刷新AccessToken，准备退出', 'error')
             sys.exit()
 
-    def print(self, message, type):
-        func = 'print_' + type
+    def print(self, message, print_type):
+        func = 'print_' + print_type
         return getattr(common, func)(message, self.id)

@@ -85,7 +85,7 @@ class Client():
         # 命令分配
         if len(sys.argv) == 3:
             # 网盘保存路径
-            DATA['config']['ROOT_PATH'] = qualify_path(sys.argv[2]).rstrip(os.sep)
+            DATA['config']['ROOT_PATH'] = sys.argv[2]
             # 读取文件路径
             abspath = os.path.abspath(sys.argv[1])
 
@@ -97,6 +97,7 @@ class Client():
             abspath = DATA['config']['FILE_PATH']
 
         DATA['config']['FILE_PATH'] = os.path.dirname(abspath)
+        DATA['config']['ROOT_PATH'] = qualify_path(DATA['config']['ROOT_PATH'])
         if os.path.isdir(abspath):
             # 目录上传
             self.tasks = get_all_file_relative(abspath)

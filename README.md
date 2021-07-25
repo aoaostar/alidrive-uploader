@@ -2,6 +2,7 @@
 
 * Author：Pluto
 * Github：https://github.com/Hidove/aliyundrive-uploader
+* 宝塔插件：https://github.com/aoaostar/aliyundrive_uploader_for_baota
 
 > 如有侵权，请联系我删除
 >
@@ -13,6 +14,7 @@
 ## 使用方法
 ### 直接使用
 <https://github.com/Hidove/aliyundrive-uploader/releases>
+
 先下载对应系统版本，没有的需要自行编译
 #### windows/Linux系统
 * 下载文件后解压
@@ -123,6 +125,7 @@ git pull
 
 ## 编译
 > 需要配合conda或virtualenv使用，请自行学习相关知识
+> 也可使用actions里的自动编译
 
 ### 以virtualenv为例
 * 安装virtualenv

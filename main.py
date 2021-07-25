@@ -42,9 +42,6 @@ if not DATA['config']['RESIDENT']:
         else:
             create_task(tmp)
 
-if not DATA['config']['MULTITHREADING']:
-    DATA['config']['MAX_WORKERS'] = 1
-
 
 def thread(task):
     drive = client.upload_file(task)
@@ -56,7 +53,7 @@ def thread(task):
 
 
 def distribute_thread(tasks):
-    if not DATA['config']['MULTITHREADING']:
+    if not DATA['config']['MULTITHREADING'] or DATA['config']['MAX_WORKERS'] <= 0:
         for task in tasks:
             thread(task)
     else:

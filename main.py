@@ -7,15 +7,16 @@
 # +-------------------------------------------------------------------
 
 import os
-import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, ALL_COMPLETED, wait
+from concurrent.futures import ThreadPoolExecutor
 
+from AliyunDrive import AliyunDrive
 from Client import Client
-from common import DATA, print_error, get_db, get_timestamp, print_info, load_task, create_task
+from common import DATA, print_error, get_db, get_timestamp, print_info, load_task, create_task, suicide
 
 if __name__ != '__main__':
-    sys.exit()
+    suicide()
+
 
 client = Client()
 # 配置信息初始化
@@ -53,26 +54,47 @@ def thread(task):
 
 
 def distribute_thread(tasks):
-    if not DATA['config']['MULTITHREADING'] or DATA['config']['MAX_WORKERS'] <= 0:
+    if not DATA['config']['MULTITHREADING'] or int(DATA['config']['MAX_WORKERS']) <= 0:
         for task in tasks:
             thread(task)
     else:
         with ThreadPoolExecutor(max_workers=int(DATA['config']['MAX_WORKERS'])) as executor:
-            future_list = []
             for task in tasks:
                 # 提交线程
-                future = executor.submit(thread, task)
-                future_list.append(future)
+                executor.submit(thread, task)
 
-            wait(future_list, return_when=ALL_COMPLETED)
 
+# 定时任务
+def crontab():
+    def crontab_tasks():
+        # 定时刷新token
+        (AliyunDrive(DATA['config']['DRIVE_ID'], DATA['config']['ROOT_PATH'],
+                     DATA['config']['CHUNK_SIZE'])).token_refresh()
+
+    time_period = DATA['time_period']
+    crontab_tasks()
+    while True:
+        if time_period <= 0:
+            try:
+                crontab_tasks()
+            except Exception as e:
+                print_error(e.__str__())
+            finally:
+                time_period = DATA['time_period']
+        else:
+            time_period -= 1
+        time.sleep(1)
+
+
+(ThreadPoolExecutor()).submit(crontab)
 
 while True:
     client.tasks = load_task()
     if len(client.tasks) <= 0:
         if not DATA['config']['RESIDENT']:
-            break
+            suicide()
         else:
             print_info('当前无任务，等待新的任务队列中', 0)
             time.sleep(5)
     distribute_thread(client.tasks)
+

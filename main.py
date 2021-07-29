@@ -19,10 +19,10 @@ if __name__ != '__main__':
 
 
 client = Client()
-# 配置信息初始化
-client.init_config()
 # 数据库初始化
 client.init_database()
+# 配置信息初始化
+client.init_config()
 # 命令行参数初始化，读取文件列表
 client.init_command_line_parameter()
 # 输出配置信息

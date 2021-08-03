@@ -7,16 +7,20 @@
 # +-------------------------------------------------------------------
 
 import os
+import signal
 import time
 from concurrent.futures import ThreadPoolExecutor
 
 from AliyunDrive import AliyunDrive
 from Client import Client
-from common import DATA, print_error, get_db, get_timestamp, print_info, load_task, create_task, suicide
+from common import DATA, print_error, get_db, get_timestamp, print_info, load_task, create_task, suicide, ctrl_c
 
 if __name__ != '__main__':
     suicide()
 
+
+signal.signal(signal.SIGINT, ctrl_c)
+signal.signal(signal.SIGTERM, ctrl_c)
 
 client = Client()
 # 数据库初始化
@@ -88,13 +92,14 @@ def crontab():
 
 (ThreadPoolExecutor()).submit(crontab)
 
+is_RESIDENT = DATA['config']['RESIDENT']
 while True:
     client.tasks = load_task()
     if len(client.tasks) <= 0:
-        if not DATA['config']['RESIDENT']:
+        if not is_RESIDENT:
             suicide()
         else:
             print_info('当前无任务，等待新的任务队列中', 0)
             time.sleep(5)
+            continue
     distribute_thread(client.tasks)
-

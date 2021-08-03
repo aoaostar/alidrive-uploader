@@ -39,10 +39,12 @@ DATA = {
 }
 
 
-
 def suicide():
     os._exit(1)
 
+
+def ctrl_c(signalnum, frame):
+    suicide()
 
 # 处理路径
 def qualify_path(path):

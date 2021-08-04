@@ -31,7 +31,7 @@ class Client():
         except Exception as e:
             status = False
             for index in range(int(DATA['config']['RETRY'])):
-                self.print('【%s】正在尝试第%d次重试！' % (drive.filename, index), 'warn', drive.id)
+                self.print('【%s】正在尝试第%d次重试！' % (drive.filename, index + 1), 'warn', drive.id)
                 if drive.upload():
                     status = True
                     break
@@ -100,17 +100,18 @@ class Client():
 
         DATA['config']['FILE_PATH'] = os.path.dirname(abspath)
         DATA['config']['ROOT_PATH'] = qualify_path(DATA['config']['ROOT_PATH'])
-        if os.path.exists(abspath):
-            if os.path.isdir(abspath):
-                # 目录上传
-                self.tasks = get_all_file_relative(abspath)
-                self.tasks = list(map(lambda x: os.path.basename(abspath) + os.sep + x, self.tasks))
+        if not DATA['config']['RESIDENT']:
+            if os.path.exists(abspath):
+                if os.path.isdir(abspath):
+                    # 目录上传
+                    self.tasks = get_all_file_relative(abspath)
+                    self.tasks = list(map(lambda x: os.path.basename(abspath) + os.sep + x, self.tasks))
+                else:
+                    # 单文件上传
+                    self.tasks = [os.path.basename(abspath)]
             else:
-                # 单文件上传
-                self.tasks = [os.path.basename(abspath)]
-        else:
 
-            self.print('该文件夹不存在：%s，请重试' % abspath, 'error')
+                self.print('该文件夹不存在：%s，请重试' % abspath, 'error')
         # 获取目录的父目录以上传该目录并且格式化目录
 
         DATA['config']['FILE_PATH'] = qualify_path(DATA['config']['FILE_PATH'])

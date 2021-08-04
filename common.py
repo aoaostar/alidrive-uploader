@@ -46,6 +46,7 @@ def suicide():
 def ctrl_c(signalnum, frame):
     suicide()
 
+
 # 处理路径
 def qualify_path(path):
     if not path:
@@ -188,6 +189,7 @@ def get_timestamp():
 
 
 def log(message, id=None, log_level='info'):
+    task_log_id = None
     if not id is None:
         db = get_db()
         idata = {
@@ -196,12 +198,20 @@ def log(message, id=None, log_level='info'):
             'log_level': log_level,
             'create_time': get_timestamp(),
         }
-        db.table('task_log').insert(idata)
+        task_log_id = db.table('task_log').insert(idata)
     file = get_running_path('/log/' + time.strftime("%Y-%m-%d", time.localtime()) + '.log')
     if not os.path.exists(os.path.dirname(file)):
         os.mkdir(os.path.dirname(file))
     with open(file, 'a') as f:
         f.write('【{date}】{message}\n'.format(date=date(time.time()), message=message))
+    return task_log_id
+
+
+def update_task_log(task_log_id, message):
+    db = get_db()
+    return db.table('task_log').where('id=?', task_log_id).update({
+        'content': message
+    })
 
 
 def get_xml_tag_value(xml_string, tag_name):

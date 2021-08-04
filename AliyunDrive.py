@@ -159,6 +159,11 @@ class AliyunDrive:
         self.part_upload_url_list = requests_post_json.get('part_info_list', [])
         self.file_id = requests_post_json.get('file_id')
         self.upload_id = requests_post_json.get('upload_id')
+        common.save_task(self.id, {
+            'drive_id': self.drive_id,
+            'file_id': self.file_id,
+            'upload_id': self.upload_id,
+        })
         return requests_post_json
 
     def get_upload_url(self):
@@ -183,6 +188,7 @@ class AliyunDrive:
 
     def upload(self):
         with open(self.realpath, "rb") as f:
+            task_log_id = common.log('正在上传【%s】0%%' % self.filename, self.id, 'info')
             with tqdm.wrapattr(f, "read", desc='正在上传【%s】' % self.filename, miniters=1,
                                initial=self.part_number * self.chunk_size,
                                total=self.filesize,
@@ -205,17 +211,24 @@ class AliyunDrive:
                             self.part_upload_url_list = self.get_upload_url()
                             continue
                         common_get_xml_value = common.get_xml_tag_value(res.text, 'Code')
-                        if common_get_xml_value == 'PartAlreadyExist':
+                        if common_get_xml_value == 'PartNotSequential':
+                            self.part_number -= 1
+                            continue
+                        elif common_get_xml_value == 'PartAlreadyExist':
                             pass
                         else:
                             self.print(res.text, 'error')
                             # res.raise_for_status()
                             return False
                     self.part_number += 1
+                    common.update_task_log(task_log_id,
+                                           '正在上传【%s】%.2f%%' % (
+                                               self.filename, ((self.part_number * total_size) / self.filesize) * 100))
                     udata = {
                         "part_number": self.part_number,
                     }
                     common.save_task(self.id, udata)
+
         return True
 
     def complete(self):
@@ -327,6 +340,6 @@ class AliyunDrive:
             common.suicide()
         return True
 
-    def print(self, message, print_type):
+    def print(self, message, print_type='info'):
         func = 'print_' + print_type
         return getattr(common, func)(message, self.id)

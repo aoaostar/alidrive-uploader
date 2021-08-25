@@ -95,9 +95,9 @@ class AliyunDrive:
     def token_refresh(self):
         LOCK_TOKEN_REFRESH.acquire()
         try:
-            data = {"refresh_token": DATA['config']['REFRESH_TOKEN']}
+            data = {"refresh_token": DATA['config']['REFRESH_TOKEN'],'Grant_Type':'refresh_token'}
             post = requests.post(
-                'https://websv.aliyundrive.com/token/refresh',
+                'https://auth.aliyundrive.com/v2/account/token',
                 data=json.dumps(data),
                 headers={
                     'content-type': 'application/json;charset=UTF-8'

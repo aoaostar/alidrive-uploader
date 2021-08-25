@@ -2,6 +2,7 @@
 
 * Author：Pluto
 * Github：https://github.com/Hidove/aliyundrive-uploader
+* 宝塔插件：https://github.com/aoaostar/aliyundrive_uploader_for_baota
 
 > 如有侵权，请联系我删除
 >
@@ -13,6 +14,7 @@
 ## 使用方法
 ### 直接使用
 <https://github.com/Hidove/aliyundrive-uploader/releases>
+
 先下载对应系统版本，没有的需要自行编译
 #### windows/Linux系统
 * 下载文件后解压
@@ -63,7 +65,8 @@ default_drive_id  =>  ${data.default_drive_id}
   "RESUME": false,
   "OVERWRITE": false,
   "RETRY": 0,
-  "RESIDENT": false
+  "RESIDENT": false,
+  "VERSIONS":"v2021.0729.1800"
 }
 ```
 | 参数             | 注释                               |   值           |
@@ -79,6 +82,7 @@ default_drive_id  =>  ${data.default_drive_id}
 | OVERWRITE      | 覆盖同名文件，会将原文件放入回收站     | true/false       |
 | RETRY          | 上传失败重试次数                   |     0            |
 | RESIDENT      | 是否启用常驻运行，不间断运行，会监控数据库内的任务队列| true/false       |
+| VERSIONS      | 版本号                            | v2021.0729.1800       |
 
 ##### 运行
 ```shell
@@ -123,6 +127,7 @@ git pull
 
 ## 编译
 > 需要配合conda或virtualenv使用，请自行学习相关知识
+> 也可使用actions里的自动编译
 
 ### 以virtualenv为例
 * 安装virtualenv

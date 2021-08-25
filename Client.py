@@ -6,15 +6,16 @@
 # +-------------------------------------------------------------------
 
 # 配置信息
+
 import json
 import os
 import sqlite3
 import sys
 
 from AliyunDrive import AliyunDrive
-from common import get_running_path, print_error, get_config, DATA, get_config_file_path, qualify_path, \
-    get_all_file_relative, print_success, LOCK, get_db_file_path, save_task, get_timestamp, print_warn, date, \
-    print_info
+from common import get_running_path, get_config, DATA, get_config_file_path, qualify_path, \
+    get_all_file_relative, LOCK, get_db_file_path, save_task, get_timestamp, date, suicide
+import common
 
 
 class Client():
@@ -29,8 +30,8 @@ class Client():
             drive.upload()
         except Exception as e:
             status = False
-            for index in range(DATA['config']['RETRY']):
-                print_warn('【%s】正在尝试第%d次重试！' % (drive.filename, index), drive.id)
+            for index in range(int(DATA['config']['RETRY'])):
+                self.print('【%s】正在尝试第%d次重试！' % (drive.filename, index + 1), 'warn', drive.id)
                 if drive.upload():
                     status = True
                     break
@@ -57,18 +58,19 @@ class Client():
             "OVERWRITE": False,
             "RETRY": 0,
             "RESIDENT": False,
+            "VERSIONS": "v2021.0729.1800"
         }
         if not os.path.exists(get_config_file_path()):
-            print_error('请配置好config.json后重试')
+            self.print('请配置好config.json后重试', 'error')
             with open(get_config_file_path(), 'w') as f:
                 f.write(json.dumps(config))
-            sys.exit()
+            suicide()
         try:
             config.update(get_config())
             DATA['config'] = config
 
         except Exception as e:
-            print_error('请配置好config.json后重试')
+            self.print('请配置好config.json后重试', 'error')
             raise e
 
     def init_command_line_parameter(self):
@@ -85,7 +87,7 @@ class Client():
         # 命令分配
         if len(sys.argv) == 3:
             # 网盘保存路径
-            DATA['config']['ROOT_PATH'] = qualify_path(sys.argv[2]).rstrip(os.sep)
+            DATA['config']['ROOT_PATH'] = sys.argv[2]
             # 读取文件路径
             abspath = os.path.abspath(sys.argv[1])
 
@@ -97,13 +99,19 @@ class Client():
             abspath = DATA['config']['FILE_PATH']
 
         DATA['config']['FILE_PATH'] = os.path.dirname(abspath)
-        if os.path.isdir(abspath):
-            # 目录上传
-            self.tasks = get_all_file_relative(abspath)
-            self.tasks = list(map(lambda x: os.path.basename(abspath) + os.sep + x, self.tasks))
-        else:
-            # 单文件上传
-            self.tasks = [os.path.basename(abspath)]
+        DATA['config']['ROOT_PATH'] = qualify_path(DATA['config']['ROOT_PATH'])
+        if not DATA['config']['RESIDENT']:
+            if os.path.exists(abspath):
+                if os.path.isdir(abspath):
+                    # 目录上传
+                    self.tasks = get_all_file_relative(abspath)
+                    self.tasks = list(map(lambda x: os.path.basename(abspath) + os.sep + x, self.tasks))
+                else:
+                    # 单文件上传
+                    self.tasks = [os.path.basename(abspath)]
+            else:
+
+                self.print('该文件夹不存在：%s，请重试' % abspath, 'error')
         # 获取目录的父目录以上传该目录并且格式化目录
 
         DATA['config']['FILE_PATH'] = qualify_path(DATA['config']['FILE_PATH'])
@@ -135,6 +143,7 @@ class Client():
         constraint task_log_pk
             primary key autoincrement,
     task_id     INTEGER,
+    log_level       TEXT    default 'info' not null,
     content     TEXT    default '' not null,
     create_time INTEGER default 0 not null
 );''')
@@ -147,7 +156,10 @@ class Client():
         # 加载任务队列
         drive.load_task(task)
         # 刷新token
-        drive.token_refresh()
+        # drive.token_refresh()
+        if not os.path.exists(task['realpath']):
+            drive.status = -1
+            return drive
         drive.load_file(task['filepath'], task['realpath'])
         # 创建目录
         LOCK.acquire()
@@ -172,7 +184,9 @@ class Client():
         if 'rapid_upload' in create_post_json and create_post_json['rapid_upload']:
             drive.finish_time = get_timestamp()
             drive.spend_time = drive.finish_time - drive.start_time
-            print_success('【{filename}】秒传成功！消耗{s}秒'.format(filename=drive.filename, s=drive.spend_time), drive.id)
+
+            self.print('【{filename}】秒传成功！消耗{s}秒'.format(filename=drive.filename, s=drive.spend_time), 'success',
+                       drive.id)
             drive.status = 1
             return drive
         # 上传
@@ -195,9 +209,13 @@ class Client():
             "part_number",
             "chunk_size",
         ]
+
         data = {}
         for v in tmp:
             data[v] = task.__getattribute__(v)
+            if data[v] is None:
+                data[v] = ''
+
         return save_task(task_id, data)
 
     def print_config_info(self):
@@ -210,4 +228,8 @@ class Client():
         当前时间：%s%s
 =================================================
 ''' % (date(get_timestamp()), s)
-        print_info(content)
+        self.print(content, 'info')
+
+    def print(self, message, print_type, id=0):
+        func = 'print_' + print_type
+        return getattr(common, func)(message, id)

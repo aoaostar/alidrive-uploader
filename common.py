@@ -16,7 +16,10 @@ from xml.dom.minidom import parseString
 from sqlite import sqlite
 
 LOCK = threading.Lock()
+LOCK_TOKEN_REFRESH = threading.Lock()
 DATA = {
+    'access_token': '',
+    'time_period': 600,
     'config': {},
     'folder_id_dict': {},
     'task_template': {
@@ -34,6 +37,14 @@ DATA = {
         "chunk_size": 104857600,
     }
 }
+
+
+def suicide():
+    os._exit(1)
+
+
+def ctrl_c(signalnum, frame):
+    suicide()
 
 
 # 处理路径
@@ -142,24 +153,28 @@ def get_all_file_relative(path):
 
 
 def print_info(message, id=None):
+    message = message.__str__()
     # i = random.randint(34, 37)
     i = 36
-    log(message, id)
+    log(message, id, 'info')
     print('\033[7;30;{i}m{message}\033[0m'.format(message=message, i=i))
 
 
 def print_warn(message, id=None):
-    log(message, id)
+    message = message.__str__()
+    log(message, id, 'warn')
     print('\033[7;30;33m{message}\033[0m'.format(message=message))
 
 
 def print_error(message, id=None):
-    log(message, id)
+    message = message.__str__()
+    log(message, id, 'error')
     print('\033[7;30;31m{message}\033[0m'.format(message=message))
 
 
 def print_success(message, id=None):
-    log(message, id)
+    message = message.__str__()
+    log(message, id, 'success')
     print('\033[7;30;32m{message}\033[0m'.format(message=message))
 
 
@@ -173,20 +188,30 @@ def get_timestamp():
     return int(time.time())
 
 
-def log(message, id=None):
+def log(message, id=None, log_level='info'):
+    task_log_id = None
     if not id is None:
         db = get_db()
         idata = {
             'task_id': id,
             'content': message,
+            'log_level': log_level,
             'create_time': get_timestamp(),
         }
-        db.table('task_log').insert(idata)
+        task_log_id = db.table('task_log').insert(idata)
     file = get_running_path('/log/' + time.strftime("%Y-%m-%d", time.localtime()) + '.log')
     if not os.path.exists(os.path.dirname(file)):
         os.mkdir(os.path.dirname(file))
     with open(file, 'a') as f:
         f.write('【{date}】{message}\n'.format(date=date(time.time()), message=message))
+    return task_log_id
+
+
+def update_task_log(task_log_id, message):
+    db = get_db()
+    return db.table('task_log').where('id=?', task_log_id).update({
+        'content': message
+    })
 
 
 def get_xml_tag_value(xml_string, tag_name):

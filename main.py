@@ -7,21 +7,26 @@
 # +-------------------------------------------------------------------
 
 import os
-import sys
+import signal
 import time
-from concurrent.futures import ThreadPoolExecutor, ALL_COMPLETED, wait
+from concurrent.futures import ThreadPoolExecutor
 
+from AliyunDrive import AliyunDrive
 from Client import Client
-from common import DATA, print_error, get_db, get_timestamp, print_info, load_task, create_task
+from common import DATA, print_error, get_db, get_timestamp, print_info, load_task, create_task, suicide, ctrl_c
 
 if __name__ != '__main__':
-    sys.exit()
+    suicide()
+
+
+signal.signal(signal.SIGINT, ctrl_c)
+signal.signal(signal.SIGTERM, ctrl_c)
 
 client = Client()
-# 配置信息初始化
-client.init_config()
 # 数据库初始化
 client.init_database()
+# 配置信息初始化
+client.init_config()
 # 命令行参数初始化，读取文件列表
 client.init_command_line_parameter()
 # 输出配置信息
@@ -42,9 +47,6 @@ if not DATA['config']['RESIDENT']:
         else:
             create_task(tmp)
 
-if not DATA['config']['MULTITHREADING']:
-    DATA['config']['MAX_WORKERS'] = 1
-
 
 def thread(task):
     drive = client.upload_file(task)
@@ -56,26 +58,48 @@ def thread(task):
 
 
 def distribute_thread(tasks):
-    if not DATA['config']['MULTITHREADING']:
+    if not DATA['config']['MULTITHREADING'] or int(DATA['config']['MAX_WORKERS']) <= 0:
         for task in tasks:
             thread(task)
     else:
         with ThreadPoolExecutor(max_workers=int(DATA['config']['MAX_WORKERS'])) as executor:
-            future_list = []
             for task in tasks:
                 # 提交线程
-                future = executor.submit(thread, task)
-                future_list.append(future)
-
-            wait(future_list, return_when=ALL_COMPLETED)
+                executor.submit(thread, task)
 
 
+# 定时任务
+def crontab():
+    def crontab_tasks():
+        # 定时刷新token
+        (AliyunDrive(DATA['config']['DRIVE_ID'], DATA['config']['ROOT_PATH'],
+                     DATA['config']['CHUNK_SIZE'])).token_refresh()
+
+    time_period = DATA['time_period']
+    crontab_tasks()
+    while True:
+        if time_period <= 0:
+            try:
+                crontab_tasks()
+            except Exception as e:
+                print_error(e.__str__())
+            finally:
+                time_period = DATA['time_period']
+        else:
+            time_period -= 1
+        time.sleep(1)
+
+
+(ThreadPoolExecutor()).submit(crontab)
+
+is_RESIDENT = DATA['config']['RESIDENT']
 while True:
     client.tasks = load_task()
     if len(client.tasks) <= 0:
-        if not DATA['config']['RESIDENT']:
-            break
+        if not is_RESIDENT:
+            suicide()
         else:
             print_info('当前无任务，等待新的任务队列中', 0)
             time.sleep(5)
+            continue
     distribute_thread(client.tasks)

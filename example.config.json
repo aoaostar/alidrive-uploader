@@ -9,5 +9,6 @@
   "RESUME": false,
   "OVERWRITE": false,
   "RETRY": 0,
-  "RESIDENT": false
+  "RESIDENT": false,
+  "VERSIONS":"v2021.0804.1200"
 }

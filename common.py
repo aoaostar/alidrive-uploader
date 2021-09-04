@@ -39,12 +39,12 @@ DATA = {
 }
 
 
-def suicide():
-    os._exit(1)
+def suicide(code=0):
+    os._exit(code)
 
 
 def ctrl_c(signalnum, frame):
-    suicide()
+    suicide(0)
 
 
 # 处理路径

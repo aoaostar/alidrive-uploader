@@ -95,7 +95,7 @@ class AliyunDrive:
     def token_refresh(self):
         LOCK_TOKEN_REFRESH.acquire()
         try:
-            data = {"refresh_token": DATA['config']['REFRESH_TOKEN'],'Grant_Type':'refresh_token'}
+            data = {"refresh_token": DATA['config']['REFRESH_TOKEN'], 'Grant_Type': 'refresh_token'}
             post = requests.post(
                 'https://auth.aliyundrive.com/v2/account/token',
                 data=json.dumps(data),
@@ -112,7 +112,7 @@ class AliyunDrive:
 
             except Exception as e:
                 self.print('refresh_token已经失效', 'warn')
-                raise e
+                return False
 
             DATA['access_token'] = post_json['access_token']
             self.headers = {
@@ -337,7 +337,7 @@ class AliyunDrive:
             self.print('无法刷新AccessToken，准备退出', 'error')
         if 'code' in response_json.keys():
             self.print(response_json, 'error')
-            common.suicide()
+            common.suicide(1)
         return True
 
     def print(self, message, print_type='info'):

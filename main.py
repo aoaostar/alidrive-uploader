@@ -16,7 +16,7 @@ from Client import Client
 from common import DATA, print_error, get_db, get_timestamp, print_info, load_task, create_task, suicide, ctrl_c
 
 if __name__ != '__main__':
-    suicide()
+    suicide(0)
 
 
 signal.signal(signal.SIGINT, ctrl_c)
@@ -41,11 +41,15 @@ if not DATA['config']['RESIDENT']:
             "realpath": DATA['config']['FILE_PATH'] + v,
             "create_time": get_timestamp(),
         })
-        find = db.table('task').where('filepath=? and realpath=?', (tmp['filepath'], tmp['realpath'],)).find()
-        if find:
-            print_info('【%s】已存在任务队列中，跳过' % tmp['filepath'])
-        else:
+        # 允许同一目录文件重复上传
+        if DATA['config']['ALLOW_REPEAT']:
             create_task(tmp)
+        else:
+            find = db.table('task').where('filepath=? and realpath=?', (tmp['filepath'], tmp['realpath'],)).find()
+            if find:
+                print_info('【%s】已存在任务队列中，跳过' % tmp['filepath'])
+            else:
+                create_task(tmp)
 
 
 def thread(task):
@@ -97,7 +101,7 @@ while True:
     client.tasks = load_task()
     if len(client.tasks) <= 0:
         if not is_RESIDENT:
-            suicide()
+            suicide(0)
         else:
             print_info('当前无任务，等待新的任务队列中', 0)
             time.sleep(5)

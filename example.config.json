@@ -10,5 +10,6 @@
   "OVERWRITE": false,
   "RETRY": 0,
   "RESIDENT": false,
-  "VERSIONS":"v2021.0804.1200"
+  "ALLOW_REPEAT": true,
+  "VERSIONS": "v2021.0904.1900"
 }

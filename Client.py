@@ -58,13 +58,14 @@ class Client():
             "OVERWRITE": False,
             "RETRY": 0,
             "RESIDENT": False,
-            "VERSIONS": "v2021.0729.1800"
+            "ALLOW_REPEAT": False,
+            "VERSIONS": "v2021.0904.1900"
         }
         if not os.path.exists(get_config_file_path()):
             self.print('请配置好config.json后重试', 'error')
             with open(get_config_file_path(), 'w') as f:
                 f.write(json.dumps(config))
-            suicide()
+            suicide(1)
         try:
             config.update(get_config())
             DATA['config'] = config
@@ -156,7 +157,6 @@ class Client():
         # 加载任务队列
         drive.load_task(task)
         # 刷新token
-        # drive.token_refresh()
         if not os.path.exists(task['realpath']):
             drive.status = -1
             return drive

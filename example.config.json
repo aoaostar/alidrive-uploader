@@ -5,11 +5,11 @@
   "FILE_PATH": "D:\\Pictures\\",
   "MULTITHREADING": false,
   "MAX_WORKERS": 5,
-  "CHUNK_SIZE": 104857600,
+  "CHUNK_SIZE": 10485760,
   "RESUME": false,
   "OVERWRITE": false,
   "RETRY": 0,
   "RESIDENT": false,
-  "ALLOW_REPEAT": true,
-  "VERSIONS": "v2021.0904.1900"
+  "ALLOW_REPEAT": false,
+  "VERSIONS": "v2021.0917.1400"
 }

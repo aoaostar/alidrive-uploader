@@ -4,14 +4,18 @@
 # +-------------------------------------------------------------------
 # | Author: Pluto <i@abcyun.cc>
 # +-------------------------------------------------------------------
-
+import base64
 import hashlib
+import html
 import json
 import os
+import string
 import sys
 import threading
 import time
+from urllib import parse
 from xml.dom.minidom import parseString
+
 
 from sqlite import sqlite
 
@@ -250,3 +254,26 @@ def read_in_chunks(file_object, chunk_size=16 * 1024, total_size=10 * 1024 * 102
             break
         load_size += 16 * 1024
         yield data
+
+
+def get_buff_hash_proof(access_token: string, realpath: string) -> dict:
+    with open(realpath, 'rb') as buff:
+        filesize = os.path.getsize(realpath)
+        if filesize == 0: return {'sha1': 'DA39A3EE5E6B4B0D3255BFEF95601890AFD80709', 'proof_code': ''};
+
+        hash =  get_hash(realpath).upper()
+        m = html.unescape(parse.quote(access_token))
+
+        buffa = m
+        md5a = hashlib.md5()
+        md5a.update(buffa.encode('utf-8'))
+        md5a = md5a.hexdigest()
+
+        start = int(int('0x' + md5a[0:16], 16) % int(filesize))
+        end = min(start + 8, filesize)
+
+        buff.seek(start)
+        buffb = buff.read(end - start)
+
+        proof_code = base64.b64encode(buffb)
+        return {'sha1': hash, 'proof_code': proof_code.decode()}

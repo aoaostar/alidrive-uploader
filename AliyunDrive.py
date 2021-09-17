@@ -35,6 +35,7 @@ class AliyunDrive:
         self.realpath = None
         self.filename = None
         self.hash = None
+        self.proof_code = None
         self.part_info_list = []
         self.part_upload_url_list = []
         self.upload_id = 0
@@ -74,7 +75,9 @@ class AliyunDrive:
         self.realpath = realpath
         self.filename = os.path.basename(self.realpath)
         self.print('【{filename}】正在校检文件中，耗时与文件大小有关'.format(filename=self.filename), 'info')
-        self.hash = common.get_hash(self.realpath)
+        proof = common.get_buff_hash_proof(DATA['access_token'], self.realpath)
+        self.hash = proof['sha1']
+        self.proof_code = proof['proof_code']
         self.filesize = os.path.getsize(self.realpath)
 
         self.part_info_list = []
@@ -134,14 +137,16 @@ class AliyunDrive:
             "check_name_mode": "auto_rename",
             "size": self.filesize,
             "content_hash": self.hash,
-            "content_hash_name": 'sha1'
+            "content_hash_name": 'sha1',
+            'proof_code': self.proof_code,
+            'proof_version': "v1"
         }
         # 覆盖已有文件
         if DATA['config']['OVERWRITE']:
             create_data['check_name_mode'] = 'refuse'
         request_post = requests.post(
-            'https://api.aliyundrive.com/v2/file/create',
-            # 'https://api.aliyundrive.com/adrive/v2/file/createWithFolders',
+            # 'https://api.aliyundrive.com/v2/file/create',
+            'https://api.aliyundrive.com/adrive/v2/file/createWithFolders',
             data=json.dumps(create_data),
             headers=self.headers,
             verify=False
@@ -218,7 +223,6 @@ class AliyunDrive:
                             pass
                         else:
                             self.print(res.text, 'error')
-                            # res.raise_for_status()
                             return False
                     self.part_number += 1
                     common.update_task_log(task_log_id,
@@ -333,6 +337,10 @@ class AliyunDrive:
             self.print('AccessToken已失效，尝试刷新AccessToken中', 'info')
             if self.token_refresh():
                 self.print('AccessToken刷新成功，准备返回', 'info')
+                # 重新获取proof_code
+                proof = common.get_buff_hash_proof(DATA['access_token'], self.realpath)
+                self.hash = proof['sha1']
+                self.proof_code = proof['proof_code']
                 return False
             self.print('无法刷新AccessToken，准备退出', 'error')
         if 'code' in response_json.keys():

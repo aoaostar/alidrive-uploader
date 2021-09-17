@@ -26,20 +26,17 @@ class Client():
         pass
 
     def __upload(self, drive):
-        try:
-            drive.upload()
-        except Exception as e:
-            status = False
+        status = False
+        if drive.upload():
+            status = True
+        else:
             for index in range(int(DATA['config']['RETRY'])):
                 self.print('【%s】正在尝试第%d次重试！' % (drive.filename, index + 1), 'warn', drive.id)
                 if drive.upload():
                     status = True
                     break
-            if not status:
-                drive.status = -1
-                return drive
         # 提交
-        if drive.complete():
+        if status and drive.complete():
             drive.status = 1
         else:
             drive.status = -1

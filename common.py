@@ -2,7 +2,7 @@
 # +-------------------------------------------------------------------
 # | 公共函数类
 # +-------------------------------------------------------------------
-# | Author: Pluto <i@abcyun.cc>
+# | Author: Pluto <i@aoaostar.com>
 # +-------------------------------------------------------------------
 import base64
 import hashlib
@@ -15,7 +15,6 @@ import threading
 import time
 from urllib import parse
 from xml.dom.minidom import parseString
-
 
 from sqlite import sqlite
 
@@ -42,6 +41,7 @@ DATA = {
     }
 }
 
+NUM = 0
 
 def suicide(code=0):
     os._exit(code)
@@ -260,8 +260,7 @@ def get_buff_hash_proof(access_token: string, realpath: string) -> dict:
     with open(realpath, 'rb') as buff:
         filesize = os.path.getsize(realpath)
         if filesize == 0: return {'sha1': 'DA39A3EE5E6B4B0D3255BFEF95601890AFD80709', 'proof_code': ''};
-
-        hash =  get_hash(realpath).upper()
+        hash = get_hash(realpath).upper()
         m = html.unescape(parse.quote(access_token))
 
         buffa = m

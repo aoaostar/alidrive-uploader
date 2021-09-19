@@ -2,7 +2,7 @@
 # +-------------------------------------------------------------------
 # | 阿里云盘上传类
 # +-------------------------------------------------------------------
-# | Author: Pluto <i@abcyun.cc>
+# | Author: Pluto <i@aoaostar.com>
 # +-------------------------------------------------------------------
 
 import json
@@ -97,6 +97,7 @@ class AliyunDrive:
 
     def token_refresh(self):
         LOCK_TOKEN_REFRESH.acquire()
+
         try:
             data = {"refresh_token": DATA['config']['REFRESH_TOKEN'], 'Grant_Type': 'refresh_token'}
             post = requests.post(

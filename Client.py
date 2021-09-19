@@ -2,7 +2,7 @@
 # +-------------------------------------------------------------------
 # | Client.py
 # +-------------------------------------------------------------------
-# | Author: Pluto <i@abcyun.cc>
+# | Author: Pluto <i@aoaostar.com>
 # +-------------------------------------------------------------------
 
 # 配置信息
@@ -56,7 +56,7 @@ class Client():
             "RETRY": 0,
             "RESIDENT": False,
             "ALLOW_REPEAT": False,
-            "VERSIONS": "v2021.0904.1900"
+            "VERSIONS": "v2021.0919.2000"
         }
         if not os.path.exists(get_config_file_path()):
             self.print('请配置好config.json后重试', 'error')
@@ -217,7 +217,9 @@ class Client():
 
     def print_config_info(self):
         s = ''
-        for k in DATA['config'].keys():
+        config__keys = DATA['config'].keys()
+        for k in config__keys:
+            if k in ['REFRESH_TOKEN', 'DRIVE_ID']: continue
             s += "\n\t\t%s：%s" % (k, DATA['config'][k])
 
         content = '''=================================================

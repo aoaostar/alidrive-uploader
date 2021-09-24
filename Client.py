@@ -56,7 +56,7 @@ class Client():
             "RETRY": 0,
             "RESIDENT": False,
             "ALLOW_REPEAT": False,
-            "VERSIONS": "v2021.0919.2000"
+            "VERSIONS": "v2021.0924.1700"
         }
         if not os.path.exists(get_config_file_path()):
             self.print('请配置好config.json后重试', 'error')

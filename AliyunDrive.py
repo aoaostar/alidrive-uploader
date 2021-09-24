@@ -205,12 +205,17 @@ class AliyunDrive:
                     upload_url = self.part_upload_url_list[self.part_number]['upload_url']
                     total_size = min(self.chunk_size, self.filesize)
                     fs.seek(self.part_number * total_size)
-                    res = requests.put(
-                        url=upload_url,
-                        data=common.read_in_chunks(fs, 16 * 1024, total_size),
-                        verify=False,
-                        timeout=None
-                    )
+                    try:
+                        res = requests.put(
+                            url=upload_url,
+                            data=common.read_in_chunks(fs, 16 * 1024, total_size),
+                            verify=False,
+                            timeout=None)
+                    except Exception as e:
+                        self.print(e, 'error')
+                        self.part_upload_url_list = self.get_upload_url()
+                        return self.upload()
+
                     if 400 <= res.status_code < 600:
                         common_get_xml_value = common.get_xml_tag_value(res.text, 'Message')
                         if common_get_xml_value == 'Request has expired.':

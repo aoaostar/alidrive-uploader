@@ -3,7 +3,7 @@
 # +-------------------------------------------------------------------
 # | main.py
 # +-------------------------------------------------------------------
-# | Author: Pluto <i@abcyun.cc>
+# | Author: Pluto <i@aoaostar.com>
 # +-------------------------------------------------------------------
 
 import os
@@ -13,11 +13,11 @@ from concurrent.futures import ThreadPoolExecutor
 
 from AliyunDrive import AliyunDrive
 from Client import Client
-from common import DATA, print_error, get_db, get_timestamp, print_info, load_task, create_task, suicide, ctrl_c
+from common import DATA, print_error, get_db, get_timestamp, print_info, load_task, create_task, suicide, ctrl_c, \
+    LOCK_TOKEN_REFRESH
 
 if __name__ != '__main__':
     suicide(0)
-
 
 signal.signal(signal.SIGINT, ctrl_c)
 signal.signal(signal.SIGTERM, ctrl_c)
@@ -32,6 +32,7 @@ client.init_command_line_parameter()
 # 输出配置信息
 client.print_config_info()
 db = get_db()
+
 # 是否常驻运行
 if not DATA['config']['RESIDENT']:
     for v in client.tasks:
@@ -53,6 +54,8 @@ if not DATA['config']['RESIDENT']:
 
 
 def thread(task):
+    LOCK_TOKEN_REFRESH.acquire()
+    LOCK_TOKEN_REFRESH.release()
     drive = client.upload_file(task)
     drive.finish_time = get_timestamp()
     drive.spend_time = drive.finish_time - drive.start_time
@@ -67,6 +70,7 @@ def distribute_thread(tasks):
             thread(task)
     else:
         with ThreadPoolExecutor(max_workers=int(DATA['config']['MAX_WORKERS'])) as executor:
+
             for task in tasks:
                 # 提交线程
                 executor.submit(thread, task)
@@ -80,6 +84,7 @@ def crontab():
                      DATA['config']['CHUNK_SIZE'])).token_refresh()
 
     time_period = DATA['time_period']
+    # 首次启动先执行一次
     crontab_tasks()
     while True:
         if time_period <= 0:
@@ -94,7 +99,7 @@ def crontab():
         time.sleep(1)
 
 
-(ThreadPoolExecutor()).submit(crontab)
+(ThreadPoolExecutor(1)).submit(crontab)
 
 is_RESIDENT = DATA['config']['RESIDENT']
 while True:

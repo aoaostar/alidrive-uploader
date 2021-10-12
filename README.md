@@ -67,7 +67,7 @@ default_drive_id  =>  ${data.default_drive_id}
   "RETRY": 0,
   "RESIDENT": false,
   "ALLOW_REPEAT": true,
-  "VERSIONS":"v2021.0729.1800"
+  "VERSIONS":"v2021.0919.2000"
 }
 ```
 | 参数             | 注释                               |   值           |

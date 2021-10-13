@@ -263,7 +263,7 @@ def get_buff_hash_proof(access_token: string, realpath: string) -> dict:
         sha1_file = realpath + ".sha1"
         if os.path.exists(sha1_file):
             with open(sha1_file, 'r') as text:
-                data = text.read().split("|")
+                data = text.read().strip().split("|")
                 if len(data) >= 2 and int(data[0]) == filesize:
                     hash = data[1]
                     print_info("从文件读取sha1: " + sha1_file + ", 内容: " + str(data))

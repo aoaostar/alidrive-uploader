@@ -128,7 +128,7 @@ def get_hash(filepath, block_size=2 * 1024 * 1024):
 
 def get_all_file(path):
     result = []
-    get_dir = os.listdir(path)
+    get_dir = sorted(os.listdir(path))
     for i in get_dir:
         sub_dir = os.path.join(path, i)
         if os.path.isdir(sub_dir):

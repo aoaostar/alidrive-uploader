@@ -260,18 +260,18 @@ def get_buff_hash_proof(access_token: string, realpath: string) -> dict:
         if filesize == 0: return {'sha1': 'DA39A3EE5E6B4B0D3255BFEF95601890AFD80709', 'proof_code': ''};
 
         hash = ""
-        sha1_file = realpath + ".sha1"
-        if os.path.exists(sha1_file):
-            with open(sha1_file, 'r') as text:
-                data = text.read().strip().split("|")
+        sha1path = realpath + ".sha1"
+        if os.path.exists(sha1path):
+            with open(sha1path, 'r') as f:
+                text = f.read().strip()
+                data = text.split("|")
                 if len(data) >= 2 and int(data[0]) == filesize:
                     hash = data[1]
-                    print_info("从文件读取sha1: " + sha1_file + ", 内容: " + str(data))
+                    print_info("从文件读取sha1: " + sha1path + ", 内容: " + text)
         if hash == "":
             hash = get_hash(realpath).upper()
-            f = open(sha1_file, 'w+')
-            f.write(str(filesize) + "|" + hash)
-            f.close();
+            with open(sha1path, 'w+') as f:
+                f.write(str(filesize) + "|" + hash)
 
         m = html.unescape(parse.quote(access_token))
 

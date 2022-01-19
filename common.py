@@ -9,6 +9,7 @@ import hashlib
 import html
 import json
 import os
+import re
 import string
 import sys
 import threading
@@ -40,6 +41,7 @@ DATA = {
         "chunk_size": 104857600,
     }
 }
+
 
 def suicide(code=0):
     os._exit(code)
@@ -76,11 +78,13 @@ def get_db_file_path():
 # @param key 取指定配置项，若不传则取所有配置[可选]
 def get_config(key=None):
     # 判断是否从文件读取配置
-    if not os.path.exists(get_config_file_path()): return None
+    if not os.path.exists(get_config_file_path()):
+        return None
 
     with open(get_config_file_path(), 'rb') as f:
         f_body = f.read().decode('utf-8')
-    if not f_body: return None
+    if not f_body:
+        return None
     config = json.loads(f_body)
     for value in [
         'MULTITHREADING',
@@ -93,7 +97,8 @@ def get_config(key=None):
     config['ROOT_PATH'] = qualify_path(config.get('ROOT_PATH')).rstrip(os.sep)
     # 取指定配置项
     if key:
-        if key in config: return config[key]
+        if key in config:
+            return config[key]
         return None
     return config
 
@@ -101,7 +106,8 @@ def get_config(key=None):
 def set_config(key, value):
     config = get_config()
     # 是否需要初始化配置项
-    if not config: config = {}
+    if not config:
+        config = {}
     # 是否需要设置配置值
     if key:
         config[key] = value
@@ -155,6 +161,47 @@ def get_all_file_relative(path):
     return result
 
 
+def get_all_file_relative_regexp(path):
+    result = []
+
+    if not os.path.exists(path):
+        return result
+
+    regexps = DATA["config"]["EXCEPTS"]
+    path = os.path.abspath(path)
+    get_dir = sorted(os.listdir(path))
+    name = os.path.split(path)[-1]
+    # 匹配文件夹
+    # 如果匹配到正则就跳过文件夹
+    for it in regexps:
+        if re.search(it, name):
+            return result
+
+    # 匹配文件
+    # 如果匹配到文件就跳过文件
+    get_dir = sorted(os.listdir(path))
+    for i in get_dir:
+        name = os.path.split(i)[-1]
+        # 匹配文件正则进行剔除
+        flag = False
+        for it in regexps:
+            if re.search(it, name):
+                flag = True
+                break
+            else:
+                continue
+        if not flag:
+            sub_dir = os.path.join(path, i)
+            if os.path.isdir(sub_dir):
+                all_file = get_all_file_relative_regexp(sub_dir)
+                all_file = map(lambda x: i + os.sep + x, all_file)
+                result.extend(all_file)
+            else:
+                sub_dir.lower().endswith("")
+                result.append(i)
+    return result
+
+
 def print_info(message, id=None):
     message = message.__str__()
     # i = random.randint(34, 37)
@@ -202,11 +249,13 @@ def log(message, id=None, log_level='info'):
             'create_time': get_timestamp(),
         }
         task_log_id = db.table('task_log').insert(idata)
-    file = get_running_path('/log/' + time.strftime("%Y-%m-%d", time.localtime()) + '.log')
+    file = get_running_path(
+        '/log/' + time.strftime("%Y-%m-%d", time.localtime()) + '.log')
     if not os.path.exists(os.path.dirname(file)):
         os.mkdir(os.path.dirname(file))
     with open(file, 'a') as f:
-        f.write('【{date}】{message}\n'.format(date=date(time.time()), message=message))
+        f.write('【{date}】{message}\n'.format(
+            date=date(time.time()), message=message))
     return task_log_id
 
 
@@ -258,7 +307,8 @@ def read_in_chunks(file_object, chunk_size=16 * 1024, total_size=10 * 1024 * 102
 def get_buff_hash_proof(access_token: string, realpath: string) -> dict:
     with open(realpath, 'rb') as buff:
         filesize = os.path.getsize(realpath)
-        if filesize == 0: return {'sha1': 'DA39A3EE5E6B4B0D3255BFEF95601890AFD80709', 'proof_code': ''};
+        if filesize == 0:
+            return {'sha1': 'DA39A3EE5E6B4B0D3255BFEF95601890AFD80709', 'proof_code': ''}
         hash = get_hash(realpath).upper()
         m = html.unescape(parse.quote(access_token))
 

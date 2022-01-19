@@ -14,7 +14,7 @@ import sys
 
 from AliyunDrive import AliyunDrive
 from common import get_running_path, get_config, DATA, get_config_file_path, qualify_path, \
-    get_all_file_relative, LOCK, get_db_file_path, save_task, get_timestamp, date, suicide
+    get_all_file_relative_regexp, LOCK, get_db_file_path, save_task, get_timestamp, date, suicide
 import common
 
 
@@ -102,7 +102,7 @@ class Client():
             if os.path.exists(abspath):
                 if os.path.isdir(abspath):
                     # 目录上传
-                    self.tasks = get_all_file_relative(abspath)
+                    self.tasks = get_all_file_relative_regexp(abspath)
                     self.tasks = list(map(lambda x: os.path.basename(abspath) + os.sep + x, self.tasks))
                 else:
                     # 单文件上传

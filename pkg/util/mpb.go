@@ -9,6 +9,7 @@ func NewMpb(p *mpb.Progress, name string, total int64) *mpb.Bar {
 
 	return p.New(total,
 		mpb.BarStyle().Filler("#"),
+		mpb.BarFillerClearOnComplete(),
 		mpb.PrependDecorators(
 			decor.Name(TruncateText(name, 25), decor.WCSyncSpace),
 			decor.CountersKibiByte(" % .2f / % .2f ", decor.WCSyncSpace),

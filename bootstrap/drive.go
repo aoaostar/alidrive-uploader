@@ -16,7 +16,7 @@ func TreeFolders(drive *alidrive.AliDrive, remotePath string, dirs map[string]st
 		return
 	}
 	for k := range dirs {
-		if k == "." {
+		if k == "." || k == "/" || k == "\\" {
 			dirs[k] = drive.Instance.ParentPath
 			continue
 		}
@@ -26,5 +26,4 @@ func TreeFolders(drive *alidrive.AliDrive, remotePath string, dirs map[string]st
 			return
 		}
 	}
-
 }

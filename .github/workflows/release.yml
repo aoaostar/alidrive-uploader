@@ -51,7 +51,7 @@ jobs:
       - name: compress
         run: |
           cp example.config.yaml linux_arm64/config.yaml
-          cp example.config.yaml linux_arm64/config.yaml
+          cp example.config.yaml linux_amd64/config.yaml
           cp example.config.yaml linux_arm/config.yaml
           cp example.config.yaml linux_386/config.yaml
           cp example.config.yaml windows_amd64/config.yaml
@@ -59,7 +59,7 @@ jobs:
           tar -czvf alidrive_uploader_linux_arm64.tar.gz linux_arm64
           tar -czvf alidrive_uploader_linux_arm.tar.gz linux_arm
           tar -czvf alidrive_uploader_linux_386.tar.gz linux_386
-          zip alidrive_uploader_windows_amd64.zip windows_amd64
+          zip -r alidrive_uploader_windows_amd64.zip windows_amd64
       - name: Build Changelog
         id: github_release
         uses: mikepenz/release-changelog-builder-action@main

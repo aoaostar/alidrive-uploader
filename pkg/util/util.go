@@ -22,7 +22,18 @@ func GetSha1Code(data string) string {
 }
 
 func GetProofCode(accessToken string, realpath string) (ProofCode, error) {
-	var proofCode ProofCode
+	var proofCode = ProofCode{
+		Sha1:      "DA39A3EE5E6B4B0D3255BFEF95601890AFD80709",
+		ProofCode: "",
+	}
+	stat, err := os.Stat(realpath)
+	if err != nil {
+		return proofCode, nil
+	}
+	filesize := stat.Size()
+	if filesize == 0 {
+		return proofCode, nil
+	}
 	file, err := os.Open(realpath)
 	if err != nil {
 		return proofCode, err
@@ -41,8 +52,6 @@ func GetProofCode(accessToken string, realpath string) (ProofCode, error) {
 	m := md5.New()
 	m.Write([]byte(buffa))
 	hashMd5 := hex.EncodeToString(m.Sum(nil))
-	stat, err := os.Stat(realpath)
-	filesize := stat.Size()
 	parseInt, err := strconv.ParseUint(hashMd5[0:16], 16, 64)
 	if err != nil {
 		return ProofCode{}, err
@@ -61,22 +70,28 @@ func GetProofCode(accessToken string, realpath string) (ProofCode, error) {
 	proofCode.ProofCode = encoding
 	return proofCode, nil
 }
-func GetFileContentType(out *os.File) (string, error) {
+func GetFileContentType(out *os.File) string {
 
 	buffer := make([]byte, 512)
-	_, err := out.Read(buffer)
+	_, err := out.Seek(0, 0)
 	if err != nil {
-		return "", err
+		return "plain/text"
+	}
+	_, err = out.Read(buffer)
+
+	defer func() { out.Seek(0, 0) }()
+	if err != nil {
+		return "plain/text"
 	}
 	contentType := http.DetectContentType(buffer)
-	return contentType, nil
+	return contentType
 }
 
 func GetAllFiles(path string) ([]string, error) {
 	var files []string
 	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
-			files = append(files, p)
+			files = append(files, filepath.ToSlash(p)[len(path):])
 		}
 		return nil
 	})

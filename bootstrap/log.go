@@ -4,8 +4,6 @@ import (
 	"alidrive_uploader/conf"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"io"
-	"os"
 )
 
 func InitLog() {
@@ -17,7 +15,8 @@ func InitLog() {
 		Compress:   false,               // 是否需要压缩滚动日志, 使用的 gzip 压缩
 		LocalTime:  true,
 	}
-	logrus.SetOutput(io.MultiWriter(os.Stdout, logWriter))
+	//logrus.SetOutput(io.MultiWriter(os.Stdout, logWriter))
+	logrus.SetOutput(logWriter)
 	logrus.SetFormatter(&logrus.TextFormatter{
 		ForceColors:     true,
 		FullTimestamp:   true,
@@ -26,7 +25,7 @@ func InitLog() {
 
 	if *conf.Opt.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
-		//logrus.SetReportCaller(true)
+		logrus.SetReportCaller(true)
 	} else {
 		logrus.SetLevel(logrus.InfoLevel)
 	}

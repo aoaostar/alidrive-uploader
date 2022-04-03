@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
+	"path/filepath"
 	"strings"
 )
 
@@ -104,15 +105,19 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		if err != nil {
 			return err
 		}
-		createWithFoldersBody["ContentHash"] = proofCode.Sha1
-		createWithFoldersBody["ProofCode"] = proofCode.ProofCode
-		createWithFoldersBody["ProofVersion"] = "v1"
+		delete(createWithFoldersBody, "pre_hash")
+		createWithFoldersBody["content_hash_name"] = "sha1"
+		createWithFoldersBody["content_hash"] = proofCode.Sha1
+		createWithFoldersBody["proof_code"] = proofCode.ProofCode
+		createWithFoldersBody["proof_version"] = "v1"
+		logrus.Debug("createWithFoldersBody", createWithFoldersBody)
 		_, err = client.R().
 			SetAuthToken(drive.Instance.AccessToken).
 			SetBody(&createWithFoldersBody).
 			SetResult(&resp).
 			SetError(&e).
 			Post(url)
+		logrus.Debugf("%+v,%+v", resp, e)
 		if err != nil {
 			return err
 		}
@@ -122,9 +127,11 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		if resp.RapidUpload {
 			return nil
 		}
-		logrus.Debugf("%+v,%+v", resp, e)
 	}
 
+	if len(resp.PartInfoList) != int(total) {
+		return errors.New("上传地址为空，无法上传")
+	}
 	//正式上传
 	if _, err = file.File.Seek(0, 0); err != nil {
 		return err
@@ -203,7 +210,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 
 func (drive *AliDrive) CreateFolders(path string, rootPath string) (string, error) {
 
-	path = strings.ReplaceAll(path, "\\", "/")
+	path = filepath.ToSlash(path)
 	split := strings.Split(path, "/")
 	var parentFileId = rootPath
 	for _, v := range split {

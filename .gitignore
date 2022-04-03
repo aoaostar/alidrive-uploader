@@ -3,3 +3,5 @@ test.*
 logs
 config.yaml
 *.exe
+*.bat
+main

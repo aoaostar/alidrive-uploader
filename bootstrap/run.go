@@ -4,12 +4,14 @@ import (
 	"alidrive_uploader/conf"
 	"alidrive_uploader/pkg/alidrive"
 	"alidrive_uploader/pkg/util"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/vbauerster/mpb/v7"
 	"math"
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 var errors = map[string]string{}
@@ -34,7 +36,8 @@ func Run() {
 			return
 		}
 	} else {
-		allFiles = []string{conf.Opt.Positional.LocalPath}
+		allFiles = []string{filepath.Base(conf.Opt.Positional.LocalPath)}
+		conf.Opt.Positional.LocalPath = filepath.Dir(conf.Opt.Positional.LocalPath) + "/"
 	}
 
 	drive := alidrive.AliDrive{
@@ -45,21 +48,21 @@ func Run() {
 			ParentPath:   "root",
 		},
 	}
-	logrus.Infof("正在获取AccessToken")
+	fmt.Println("正在获取AccessToken")
 	if err := drive.RefreshToken(); err != nil {
 		logrus.Panic(err)
 		return
 	}
 	conf.SaveConfig()
 
-	logrus.Infof("正在获取目录")
+	fmt.Println("正在生成目录")
 	var files []util.FileStream
 	//建立目录结构
 	var dirs = make(map[string]string, 0)
 	for _, fp := range allFiles {
 		//目录
 		dir := filepath.Dir(fp)
-		file, err := readFileInfo(fp)
+		file, err := readFileInfo(conf.Opt.Positional.LocalPath + fp)
 		if err != nil {
 			logrus.Panic(err)
 			return
@@ -75,7 +78,7 @@ func Run() {
 	TreeFolders(&drive, conf.Opt.Positional.RemotePath, dirs)
 
 	wg := sync.WaitGroup{}
-	p := mpb.New(mpb.WithWaitGroup(&wg))
+	p := mpb.New(mpb.WithWaitGroup(&wg), mpb.WithRefreshRate(300*time.Millisecond))
 
 	//文件数量进度条
 	taskBar := util.NewMpbTask(p, "任务列表", int64(len(files)))
@@ -96,6 +99,7 @@ func Run() {
 	close(jobs)
 	p.Wait()
 	logrus.Infof("上传完毕！共计%d个文件，失败文件个数：%d个", len(files), len(errors))
+	fmt.Printf("上传完毕！共计%d个文件，失败文件个数：%d个", len(files), len(errors))
 }
 
 func transfer(jobs chan util.FileStream, taskBar *mpb.Bar, p *mpb.Progress, drive *alidrive.AliDrive, dirs map[string]string) {
@@ -107,10 +111,12 @@ func transfer(jobs chan util.FileStream, taskBar *mpb.Bar, p *mpb.Progress, driv
 		file.ParentPath = dirs[file.ParentPath]
 		err := drive.Upload(file)
 		if err != nil {
-			logrus.Errorf("[%v]上传失败", err)
+			logrus.Errorf("[%v]上传失败:%v", file.Name, err)
 			errors[file.ReadlPath] = err.Error()
+			bar.Abort(true)
 		} else {
 			logrus.Infof("[%v]上传成功", file.Name)
+			bar.Abort(true)
 		}
 		taskBar.Increment()
 		_ = file.Bar.Close()
@@ -128,12 +134,8 @@ func readFileInfo(fp string) (util.FileStream, error) {
 	if err != nil {
 		return fs, err
 	}
-	contentType, err := util.GetFileContentType(open)
-	if err != nil {
-		return fs, err
-	}
+	contentType := util.GetFileContentType(open)
 	abs, err := filepath.Abs(fp)
-
 	if err != nil {
 		return fs, err
 	}

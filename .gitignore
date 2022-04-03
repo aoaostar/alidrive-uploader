@@ -1,0 +1,5 @@
+.idea
+test.*
+logs
+config.yaml
+*.exe

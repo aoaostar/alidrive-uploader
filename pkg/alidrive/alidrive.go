@@ -143,8 +143,12 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		}
 		c := http.Client{}
 		res, err := c.Do(req)
+		if err != nil {
+			return err
+		}
 		if res.StatusCode == 403 {
 			readAll, err := ioutil.ReadAll(res.Body)
+			_ = res.Body.Close()
 			if err != nil {
 				return err
 			}
@@ -182,9 +186,6 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 				i--
 				continue
 			}
-		}
-		if err != nil {
-			return err
 		}
 	}
 	//complete

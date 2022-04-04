@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 )
 
@@ -94,6 +95,9 @@ func GetAllFiles(path string) ([]string, error) {
 			files = append(files, filepath.ToSlash(p)[len(path):])
 		}
 		return nil
+	})
+	sort.Slice(files, func(i, j int) bool {
+		return len(files[i]) < len(files[j])
 	})
 	return files, err
 }

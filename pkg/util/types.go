@@ -28,6 +28,6 @@ type Option struct {
 	Version    func()  `short:"v" long:"version" description:"输出版本信息"`
 	Positional struct {
 		LocalPath  string `positional-arg-name:"LocalPath" short:"i" long:"local" description:"本地文件路径" required:"true"`
-		RemotePath string `positional-arg-name:"RemotePath" short:"o" long:"remote" description:"远程文件路径" required:"true"`
+		RemotePath string `positional-arg-name:"RemotePath" short:"o" long:"remote" description:"远程文件路径" default:"/"`
 	} `positional-args:"true" required:"true"`
 }

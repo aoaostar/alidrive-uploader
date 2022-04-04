@@ -37,8 +37,8 @@ func Run() {
 		}
 	} else {
 		allFiles = []string{filepath.Base(conf.Opt.Positional.LocalPath)}
-		conf.Opt.Positional.LocalPath = filepath.Dir(conf.Opt.Positional.LocalPath) + "/"
 	}
+	conf.Opt.Positional.LocalPath = filepath.Dir(conf.Opt.Positional.LocalPath) + "/"
 
 	drive := alidrive.AliDrive{
 		Instance: alidrive.Instance{

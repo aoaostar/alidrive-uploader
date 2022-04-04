@@ -92,7 +92,7 @@ func GetAllFiles(path string) ([]string, error) {
 	var files []string
 	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
-			files = append(files, filepath.ToSlash(p)[len(path):])
+			files = append(files, filepath.ToSlash(p)[len(filepath.Dir(path)):])
 		}
 		return nil
 	})
@@ -110,4 +110,13 @@ func TruncateText(str string, max int) string {
 		str = string(ru[:l]) + "..."
 	}
 	return str
+}
+
+func FileExist(filepath string) bool {
+	_, err := os.Stat(filepath)
+	if err != nil {
+		return !os.IsNotExist(err)
+	}
+	return true
+
 }

@@ -2,13 +2,18 @@ package bootstrap
 
 import (
 	"alidrive_uploader/conf"
+	"alidrive_uploader/pkg/util"
 	"github.com/sirupsen/logrus"
 	"math"
 )
 
 func InitConfig() {
 	//vipConfig := viper.New()
-	conf.VipConfig.SetConfigFile(conf.Opt.Config) // 指定配置文件路径
+	var configPath = conf.Opt.Config
+	if !util.FileExist(conf.Opt.Config) {
+		configPath = conf.APP_PATH + conf.Opt.Config
+	}
+	conf.VipConfig.SetConfigFile(configPath) // 指定配置文件路径
 	// 查找并读取配置文件
 	if err := conf.VipConfig.ReadInConfig(); err != nil {
 		logrus.Fatalf("读取配置出错: %s \n", err)

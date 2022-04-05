@@ -11,7 +11,9 @@
 ![](docs/preview_1.gif)
 
 ## 使用方法
-
+```shell
+curl -sL https://raw.githubusercontent.com/aoaostar/alidrive-uploader/v2/install.sh | bash 
+```
 * 重命名`example.config.yaml`为`config.yaml`
 * 填写好`config.yaml`的内容
 

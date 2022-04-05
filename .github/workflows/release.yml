@@ -38,28 +38,22 @@ jobs:
           fi
       - name: Build linux
         run: |
-          CC=gcc CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o linux_amd64/alidrive main.go
-          CC=aarch64-linux-gnu-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -o linux_arm64/alidrive main.go
-          CC=arm-linux-gnueabihf-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm go build -o linux_arm/alidrive main.go
+          CC=gcc CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o alidrive_uploader_linux_amd64/alidrive main.go
+          CC=aarch64-linux-gnu-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -o alidrive_uploader_linux_arm64/alidrive main.go
+          CC=arm-linux-gnueabihf-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm go build -o alidrive_uploader_linux_arm/alidrive main.go
       - name: Build windows
         run: |
-          CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -tags forceposix -o windows_amd64/alidrive.exe main.go
+          CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -tags forceposix -o alidrive_uploader_windows_amd64/alidrive.exe main.go
       - name: Build linux_386
         run: |
           sudo apt-get -y install libc6-dev-i386
-          CC=gcc CGO_ENABLED=1 GOOS=linux GOARCH=386 go build -o linux_386/alidrive main.go
+          CC=gcc CGO_ENABLED=1 GOOS=linux GOARCH=386 go build -o alidrive_uploader_linux_386/alidrive main.go
       - name: compress
         run: |
-          cp example.config.yaml linux_arm64/config.yaml
-          cp example.config.yaml linux_amd64/config.yaml
-          cp example.config.yaml linux_arm/config.yaml
-          cp example.config.yaml linux_386/config.yaml
-          cp example.config.yaml windows_amd64/config.yaml
-          tar -czvf alidrive_uploader_linux_amd64.tar.gz linux_amd64
-          tar -czvf alidrive_uploader_linux_arm64.tar.gz linux_arm64
-          tar -czvf alidrive_uploader_linux_arm.tar.gz linux_arm
-          tar -czvf alidrive_uploader_linux_386.tar.gz linux_386
-          zip -r alidrive_uploader_windows_amd64.zip windows_amd64
+          ls | grep "alidrive_uploader_" | awk '{ print "cp example.config.yaml "$0"/example.config.yaml" | "/bin/bash" }'
+          ls | grep "linux" | awk '{ print "tar -zcvf "$0".tar.gz "$0 | "/bin/bash" }'
+          zip -r alidrive_uploader_windows_amd64.zip alidrive_uploader_windows_amd64
+
       - name: Build Changelog
         id: github_release
         uses: mikepenz/release-changelog-builder-action@main

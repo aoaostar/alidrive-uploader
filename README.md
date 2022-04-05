@@ -6,6 +6,9 @@
 
 > 觉得不错的可以给个star~    
 
+### 宝塔插件
+<https://github.com/aoaostar/alidrive-uploader-for-baota>
+
 ## 演示
 
 ![](docs/preview_1.gif)

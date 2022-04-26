@@ -23,8 +23,11 @@ func Run() {
 	InitConfig()
 	InitLog()
 
+	conf.Opt.Positional.LocalPath, _ = filepath.Abs(conf.Opt.Positional.LocalPath)
+
 	stat, err := os.Stat(conf.Opt.Positional.LocalPath)
 	if err != nil {
+		fmt.Println(err)
 		logrus.Panic(err)
 		return
 	}
@@ -32,6 +35,7 @@ func Run() {
 	if stat.IsDir() {
 		allFiles, err = util.GetAllFiles(conf.Opt.Positional.LocalPath)
 		if err != nil {
+			fmt.Println(err)
 			logrus.Panic(err)
 			return
 		}
@@ -39,7 +43,6 @@ func Run() {
 		allFiles = []string{filepath.Base(conf.Opt.Positional.LocalPath)}
 	}
 	conf.Opt.Positional.LocalPath = filepath.Dir(conf.Opt.Positional.LocalPath) + "/"
-
 	drive := alidrive.AliDrive{
 		Instance: alidrive.Instance{
 			RefreshToken: conf.Conf.AliDrive.RefreshToken,
@@ -50,6 +53,7 @@ func Run() {
 	}
 	fmt.Println("正在获取AccessToken")
 	if err := drive.RefreshToken(); err != nil {
+		fmt.Println(err)
 		logrus.Panic(err)
 		return
 	}
@@ -64,6 +68,7 @@ func Run() {
 		dir := filepath.Dir(fp)
 		file, err := readFileInfo(conf.Opt.Positional.LocalPath + fp)
 		if err != nil {
+			fmt.Println(err)
 			logrus.Panic(err)
 			return
 		}
@@ -71,6 +76,10 @@ func Run() {
 		files = append(files, file)
 		dirs[dir] = ""
 	}
+	defer func() {
+		logrus.Infof("上传完毕！共计%d个文件，失败文件个数：%d个", len(files), len(errors))
+		fmt.Printf("上传完毕！共计%d个文件，失败文件个数：%d个", len(files), len(errors))
+	}()
 	if len(files) <= 0 {
 		return
 	}
@@ -98,8 +107,6 @@ func Run() {
 	}
 	close(jobs)
 	p.Wait()
-	logrus.Infof("上传完毕！共计%d个文件，失败文件个数：%d个", len(files), len(errors))
-	fmt.Printf("上传完毕！共计%d个文件，失败文件个数：%d个", len(files), len(errors))
 }
 
 func transfer(jobs chan util.FileStream, taskBar *mpb.Bar, p *mpb.Progress, drive *alidrive.AliDrive, dirs map[string]string) {

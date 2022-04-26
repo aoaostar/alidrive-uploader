@@ -118,5 +118,4 @@ func FileExist(filepath string) bool {
 		return !os.IsNotExist(err)
 	}
 	return true
-
 }

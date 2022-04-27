@@ -113,20 +113,18 @@ func transfer(jobs chan util.FileStream, taskBar *mpb.Bar, p *mpb.Progress, driv
 
 	for file := range jobs {
 		logrus.Infof("[%v]正在上传", file.Name)
-		bar := util.NewMpb(p, file.Name, int64(file.Size))
-		file.Bar = bar.ProxyReader(file.File)
+		file.Bar = util.NewMpb(p, file.Name, int64(file.Size))
 		file.ParentPath = dirs[file.ParentPath]
 		err := drive.Upload(file)
+		file.Bar.Abort(true)
 		if err != nil {
 			logrus.Errorf("[%v]上传失败:%v", file.Name, err)
 			errors[file.ReadlPath] = err.Error()
-			bar.Abort(true)
 		} else {
 			logrus.Infof("[%v]上传成功", file.Name)
-			bar.Abort(true)
 		}
 		taskBar.Increment()
-		_ = file.Bar.Close()
+		_ = file.File.Close()
 	}
 }
 func readFileInfo(fp string) (util.FileStream, error) {

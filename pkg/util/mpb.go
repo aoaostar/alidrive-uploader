@@ -16,7 +16,7 @@ func NewMpb(p *mpb.Progress, name string, total int64) *mpb.Bar {
 			decor.OnComplete(decor.Name("上传中", decor.WCSyncSpace), "上传完毕!"),
 		),
 		mpb.AppendDecorators(
-			decor.EwmaSpeed(decor.UnitKiB, "% .2f", 60, decor.WCSyncSpace),
+			decor.AverageSpeed(decor.UnitKiB, "% .2f", decor.WCSyncSpace),
 		),
 	)
 }

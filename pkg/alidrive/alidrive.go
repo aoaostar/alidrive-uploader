@@ -137,7 +137,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		return err
 	}
 	for i = 0; i < total; i++ {
-		req, err := http.NewRequest("PUT", resp.PartInfoList[i].UploadUrl, io.LimitReader(file.Bar, CHUNKSIZE))
+		req, err := http.NewRequest(http.MethodPut, resp.PartInfoList[i].UploadUrl, file.Bar.ProxyReader(io.LimitReader(file.File, CHUNKSIZE)))
 		if err != nil {
 			return err
 		}

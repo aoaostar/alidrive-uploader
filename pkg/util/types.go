@@ -1,7 +1,7 @@
 package util
 
 import (
-	"io"
+	"github.com/vbauerster/mpb/v7"
 	"os"
 )
 
@@ -13,7 +13,7 @@ type FileStream struct {
 	Name       string
 	MIMEType   string
 	ReadlPath  string
-	Bar        io.ReadCloser
+	Bar        *mpb.Bar
 }
 
 type ProofCode struct {

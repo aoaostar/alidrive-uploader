@@ -156,8 +156,3 @@ pyinstaller -F main.py
   * 脚本执行记录
 * `db.db`
   * sqlite数据库文件
-
-## 支持
-> 觉得写得不错可以给我打赏哦
-
-![](https://z3.ax1x.com/2021/03/26/6Xh5ex.md.png)

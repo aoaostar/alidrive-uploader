@@ -41,4 +41,7 @@ func InitConfig() {
 	if conf.Opt.AliDrive.RootPath != "" {
 		conf.Conf.AliDrive.RootPath = conf.Opt.AliDrive.RootPath
 	}
+	if conf.Opt.Proxy != "" {
+		conf.Conf.Proxy = conf.Opt.Proxy
+	}
 }

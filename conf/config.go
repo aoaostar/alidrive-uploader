@@ -4,9 +4,10 @@ import "github.com/sirupsen/logrus"
 
 type (
 	Config struct {
-		Debug    bool `json:"debug"`
-		Transfers    uint64 `json:"transfers"`
-		AliDrive struct {
+		Debug     bool   `json:"debug" mapstructure:"debug"`
+		Transfers uint64 `json:"transfers" mapstructure:"transfers"`
+		Proxy     string `json:"proxy" mapstructure:"proxy"`
+		AliDrive  struct {
 			DriveId      string `mapstructure:"drive_id"`
 			RefreshToken string `mapstructure:"refresh_token"`
 			RootPath     string `mapstructure:"root_path"`

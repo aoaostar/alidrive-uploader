@@ -1,5 +1,6 @@
 debug: false
 transfers: 3
+proxy:
 ali_drive:
   drive_id: xxxxxxx
   refresh_token: xxxxxx

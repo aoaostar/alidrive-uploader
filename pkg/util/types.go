@@ -25,6 +25,7 @@ type Option struct {
 	Debug     *bool   `short:"d" long:"debug" description:"Debug模式"`
 	Transfers *uint64 `short:"t" long:"transfers" description:"同时上传文件个数"`
 	Config    string  `short:"c" long:"config" description:"配置文件路径" default:"config.yaml"`
+	Proxy     string  `short:"p" long:"proxy" description:"API代理"`
 	Version   func()  `short:"v" long:"version" description:"输出版本信息"`
 	AliDrive  struct {
 		DriveId      string `long:"drive_id" description:"驱动id"`

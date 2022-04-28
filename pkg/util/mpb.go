@@ -17,6 +17,7 @@ func NewMpb(p *mpb.Progress, name string, total int64) *mpb.Bar {
 		),
 		mpb.AppendDecorators(
 			decor.AverageSpeed(decor.UnitKiB, "% .2f", decor.WCSyncSpace),
+			decor.OnComplete(decor.Percentage(decor.WCSyncSpace), ""),
 		),
 	)
 }

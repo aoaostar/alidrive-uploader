@@ -42,14 +42,14 @@ func Run() {
 	conf.Opt.Positional.LocalPath = filepath.Dir(conf.Opt.Positional.LocalPath) + "/"
 	conf.Output.Infof("共计%d个文件", len(allFiles))
 
-	drive := alidrive.AliDrive{
-		Instance: alidrive.Instance{
-			RefreshToken: conf.Conf.AliDrive.RefreshToken,
-			DriveId:      conf.Conf.AliDrive.DriveId,
-			AccessToken:  "",
-			ParentPath:   "root",
-		},
-	}
+	drive := alidrive.New(alidrive.Instance{
+		RefreshToken: conf.Conf.AliDrive.RefreshToken,
+		DriveId:      conf.Conf.AliDrive.DriveId,
+		AccessToken:  "",
+		ParentPath:   "root",
+		Proxy:        conf.Conf.Proxy,
+	})
+
 	conf.Output.Infof("正在获取AccessToken")
 	if err := drive.RefreshToken(); err != nil {
 		conf.Output.Panic(err)
@@ -81,7 +81,7 @@ func Run() {
 		return
 	}
 
-	TreeFolders(&drive, conf.Opt.Positional.RemotePath, dirs)
+	TreeFolders(drive, conf.Opt.Positional.RemotePath, dirs)
 
 	wg := sync.WaitGroup{}
 	p := mpb.New(mpb.WithWaitGroup(&wg), mpb.WithRefreshRate(300*time.Millisecond))
@@ -96,7 +96,7 @@ func Run() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			transfer(jobs, taskBar, p, &drive, dirs)
+			transfer(jobs, taskBar, p, drive, dirs)
 		}()
 	}
 	for _, file := range files {

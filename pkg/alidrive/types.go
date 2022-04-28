@@ -15,7 +15,8 @@ type (
 		RefreshToken string
 		DriveId      string
 		AccessToken  string
-		ParentPath  string
+		ParentPath   string
+		Proxy        string
 	}
 	PartInfo struct {
 		PartNumber uint64 `json:"part_number"`
@@ -27,17 +28,17 @@ type (
 		ContentType       string `json:"content_type"`
 	}
 	CreateWithFoldersResp struct {
-		ParentFileId string       `json:"parent_file_id"`
+		ParentFileId string         `json:"parent_file_id"`
 		PartInfoList []PartInfoResp `json:"part_info_list"`
-		UploadId     string       `json:"upload_id"`
-		RapidUpload  bool         `json:"rapid_upload"`
-		Type         string       `json:"type"`
-		FileId       string       `json:"file_id"`
-		DomainId     string       `json:"domain_id"`
-		DriveId      string       `json:"drive_id"`
-		FileName     string       `json:"file_name"`
-		EncryptMode  string       `json:"encrypt_mode"`
-		Location     string       `json:"location"`
+		UploadId     string         `json:"upload_id"`
+		RapidUpload  bool           `json:"rapid_upload"`
+		Type         string         `json:"type"`
+		FileId       string         `json:"file_id"`
+		DomainId     string         `json:"domain_id"`
+		DriveId      string         `json:"drive_id"`
+		FileName     string         `json:"file_name"`
+		EncryptMode  string         `json:"encrypt_mode"`
+		Location     string         `json:"location"`
 	}
 	GetUploadUrlResp struct {
 		DomainId     string         `json:"domain_id"`

@@ -23,6 +23,17 @@ type (
 
 var client = resty.New()
 
+func New(instance Instance) *AliDrive {
+	if instance.Proxy != "" {
+		instance.Proxy = strings.TrimRight(instance.Proxy, "/") + "/"
+	}
+	client.OnBeforeRequest(func(c *resty.Client, request *resty.Request) error {
+		request.URL = instance.Proxy + request.URL
+		return nil
+	})
+	return &AliDrive{instance}
+}
+
 func (drive *AliDrive) RefreshToken() error {
 	url := "https://auth.aliyundrive.com/v2/account/token"
 	var resp TokenResp
@@ -41,6 +52,7 @@ func (drive *AliDrive) RefreshToken() error {
 		return fmt.Errorf("刷新token失败: %s", e.Message)
 	}
 	drive.Instance.RefreshToken, drive.Instance.AccessToken = resp.RefreshToken, resp.AccessToken
+	client.SetAuthToken(drive.Instance.AccessToken)
 	return nil
 }
 
@@ -76,7 +88,6 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	}
 	//preHash
 	_, err := client.R().
-		SetAuthToken(drive.Instance.AccessToken).
 		SetBody(&createWithFoldersBody).
 		SetResult(&resp).
 		SetError(&e).
@@ -112,7 +123,6 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		createWithFoldersBody["proof_version"] = "v1"
 		conf.Output.Debug("createWithFoldersBody", createWithFoldersBody)
 		_, err = client.R().
-			SetAuthToken(drive.Instance.AccessToken).
 			SetBody(&createWithFoldersBody).
 			SetResult(&resp).
 			SetError(&e).
@@ -137,7 +147,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		return err
 	}
 	for i = 0; i < total; i++ {
-		req, err := http.NewRequest(http.MethodPut, resp.PartInfoList[i].UploadUrl, file.Bar.ProxyReader(io.LimitReader(file.File, CHUNKSIZE)))
+		req, err := http.NewRequest(http.MethodPut, drive.Instance.Proxy+resp.PartInfoList[i].UploadUrl, file.Bar.ProxyReader(io.LimitReader(file.File, CHUNKSIZE)))
 		if err != nil {
 			return err
 		}
@@ -174,7 +184,6 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 					"upload_id":      resp.UploadId,
 				}
 				_, err := client.R().SetResult(&getUploadUrlResp).SetError(&e).SetBody(getUploadUrlBody).
-					SetAuthToken(drive.Instance.AccessToken).
 					Post("https://api.aliyundrive.com/v2/file/get_upload_url")
 				if err != nil {
 					return err
@@ -194,7 +203,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		"drive_id":  drive.Instance.DriveId,
 		"file_id":   resp.FileId,
 		"upload_id": resp.UploadId,
-	}).SetAuthToken(drive.Instance.AccessToken).SetError(&e).
+	}).SetError(&e).
 		Post("https://api.aliyundrive.com/v2/file/complete")
 	if err != nil {
 		return err
@@ -227,7 +236,7 @@ func (drive *AliDrive) CreateFolders(path string, rootPath string) (string, erro
 			"check_name_mode": "refuse",
 			"type":            "folder",
 		}
-		_, err := client.R().SetAuthToken(drive.Instance.AccessToken).SetError(&e).SetBody(&body).SetResult(&resp).
+		_, err := client.R().SetError(&e).SetBody(&body).SetResult(&resp).
 			Post("https://api.aliyundrive.com/adrive/v2/file/createWithFolders")
 		if err != nil {
 			return parentFileId, err

@@ -3,6 +3,7 @@ package conf
 import (
 	"alidrive_uploader/pkg/util"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
@@ -20,6 +21,7 @@ var APP_PATH = filepath.Dir(symlinks) + "/"
 var (
 	Conf      = new(Config)
 	VipConfig = viper.New()
+	Output    = logrus.New()
 	Opt       = &util.Option{
 		Version: func() {
 			fmt.Printf("Alidrive Uploader %v", VERSION)

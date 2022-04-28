@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"math"
@@ -36,7 +35,7 @@ func (drive *AliDrive) RefreshToken() error {
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("%+v,%+v", resp, e)
+	conf.Output.Debugf("%+v,%+v", resp, e)
 
 	if e.Code != "" {
 		return fmt.Errorf("刷新token失败: %s", e.Message)
@@ -63,7 +62,6 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	}
 	var b = make([]byte, 1024)
 	read, _ := file.File.Read(b)
-
 	var preHash = util.GetSha1Code(string(b[:read]))
 
 	var createWithFoldersBody = util.Json{
@@ -86,7 +84,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("%+v,%+v", resp, e)
+	conf.Output.Debugf("%+v,%+v", resp, e)
 	if e.Code != "" && e.Code != "PreHashMatched" {
 		if e.Code == "AccessTokenInvalid" {
 			err := drive.RefreshToken()
@@ -97,6 +95,8 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 				return err
 			}
 		}
+		fmt.Println(file.ParentPath)
+		panic(err)
 		return errors.New(e.Message)
 	}
 	//proof_code
@@ -110,14 +110,14 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		createWithFoldersBody["content_hash"] = proofCode.Sha1
 		createWithFoldersBody["proof_code"] = proofCode.ProofCode
 		createWithFoldersBody["proof_version"] = "v1"
-		logrus.Debug("createWithFoldersBody", createWithFoldersBody)
+		conf.Output.Debug("createWithFoldersBody", createWithFoldersBody)
 		_, err = client.R().
 			SetAuthToken(drive.Instance.AccessToken).
 			SetBody(&createWithFoldersBody).
 			SetResult(&resp).
 			SetError(&e).
 			Post(url)
-		logrus.Debugf("%+v,%+v", resp, e)
+		conf.Output.Debugf("%+v,%+v", resp, e)
 		if err != nil {
 			return err
 		}
@@ -155,7 +155,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 			if err := xml.Unmarshal(readAll, &e); err != nil {
 				return err
 			}
-			logrus.Debugf("%+v", e)
+			conf.Output.Debugf("%+v", e)
 			if e.Code == "AccessTokenInvalid" {
 				err := drive.RefreshToken()
 				if err != nil {
@@ -199,7 +199,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	if err != nil {
 		return err
 	}
-	logrus.Debugf("%+v,%+v", resp2, e)
+	conf.Output.Debugf("%+v,%+v", resp2, e)
 	if e.Code != "" {
 		return fmt.Errorf("%+v", e.Message)
 	}
@@ -232,7 +232,7 @@ func (drive *AliDrive) CreateFolders(path string, rootPath string) (string, erro
 		if err != nil {
 			return parentFileId, err
 		}
-		logrus.Debugf("%+v,%+v", resp, e)
+		conf.Output.Debugf("%+v,%+v", resp, e)
 		if e.Code != "" {
 			return parentFileId, errors.New(e.Message)
 		}

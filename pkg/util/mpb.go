@@ -34,3 +34,18 @@ func NewMpbTask(p *mpb.Progress, name string, total int64) *mpb.Bar {
 		),
 	)
 }
+
+func NewMpbExecute(p *mpb.Progress, name string, total int64) *mpb.Bar {
+	return p.New(total,
+		mpb.BarStyle().Filler("#"),
+		mpb.PrependDecorators(
+			decor.Name(name, decor.WCSyncSpace),
+			decor.CountersNoUnit("%d / %d", decor.WCSyncSpace),
+			decor.OnComplete(decor.Name("执行中", decor.WCSyncSpace), "执行完毕!"),
+		),
+		mpb.BarFillerClearOnComplete(),
+		mpb.AppendDecorators(
+			decor.OnComplete(decor.Percentage(decor.WCSyncSpace), ""),
+		),
+	)
+}

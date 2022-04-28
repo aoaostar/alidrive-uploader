@@ -4,7 +4,6 @@ import (
 	"alidrive_uploader/conf"
 	"alidrive_uploader/pkg/alidrive"
 	"alidrive_uploader/pkg/util"
-	"fmt"
 	"github.com/sirupsen/logrus"
 	"github.com/vbauerster/mpb/v7"
 	"math"
@@ -27,22 +26,22 @@ func Run() {
 
 	stat, err := os.Stat(conf.Opt.Positional.LocalPath)
 	if err != nil {
-		fmt.Println(err)
-		logrus.Panic(err)
+		conf.Output.Panic(err)
 		return
 	}
 	var allFiles []string
 	if stat.IsDir() {
 		allFiles, err = util.GetAllFiles(conf.Opt.Positional.LocalPath)
 		if err != nil {
-			fmt.Println(err)
-			logrus.Panic(err)
+			conf.Output.Panic(err)
 			return
 		}
 	} else {
 		allFiles = []string{filepath.Base(conf.Opt.Positional.LocalPath)}
 	}
 	conf.Opt.Positional.LocalPath = filepath.Dir(conf.Opt.Positional.LocalPath) + "/"
+	conf.Output.Infof("共计%d个文件", len(allFiles))
+
 	drive := alidrive.AliDrive{
 		Instance: alidrive.Instance{
 			RefreshToken: conf.Conf.AliDrive.RefreshToken,
@@ -51,25 +50,24 @@ func Run() {
 			ParentPath:   "root",
 		},
 	}
-	fmt.Println("正在获取AccessToken")
+	conf.Output.Infof("正在获取AccessToken")
 	if err := drive.RefreshToken(); err != nil {
-		fmt.Println(err)
-		logrus.Panic(err)
+		conf.Output.Panic(err)
 		return
 	}
 	conf.SaveConfig()
 
-	fmt.Println("正在生成目录")
+	conf.Output.Infof("正在生成目录")
 	var files []util.FileStream
 	//建立目录结构
 	var dirs = make(map[string]string, 0)
+
 	for _, fp := range allFiles {
 		//目录
 		dir := filepath.Dir(fp)
 		file, err := readFileInfo(conf.Opt.Positional.LocalPath + fp)
 		if err != nil {
-			fmt.Println(err)
-			logrus.Panic(err)
+			conf.Output.Panic(err)
 			return
 		}
 		file.ParentPath = dir
@@ -77,8 +75,7 @@ func Run() {
 		dirs[dir] = ""
 	}
 	defer func() {
-		logrus.Infof("上传完毕！共计%d个文件，失败文件个数：%d个", len(files), len(errors))
-		fmt.Printf("上传完毕！共计%d个文件，失败文件个数：%d个", len(files), len(errors))
+		conf.Output.Infof("上传完毕！共计%d个文件，失败文件个数：%d个", len(files), len(errors))
 	}()
 	if len(files) <= 0 {
 		return
@@ -92,7 +89,7 @@ func Run() {
 	//文件数量进度条
 	taskBar := util.NewMpbTask(p, "任务列表", int64(len(files)))
 
-	workersNum := int(math.Min(float64(len(files)), float64(*conf.Opt.Transfers)))
+	workersNum := int(math.Min(float64(len(files)), float64(conf.Conf.Transfers)))
 	jobs := make(chan util.FileStream, workersNum)
 
 	for i := 0; i < workersNum; i++ {
@@ -113,6 +110,7 @@ func transfer(jobs chan util.FileStream, taskBar *mpb.Bar, p *mpb.Progress, driv
 
 	for file := range jobs {
 		logrus.Infof("[%v]正在上传", file.Name)
+		file.File, _ = os.Open(file.ReadlPath)
 		file.Bar = util.NewMpb(p, file.Name, int64(file.Size))
 		file.ParentPath = dirs[file.ParentPath]
 		err := drive.Upload(file)
@@ -131,6 +129,7 @@ func readFileInfo(fp string) (util.FileStream, error) {
 
 	var fs util.FileStream
 	open, err := os.Open(fp)
+	defer open.Close()
 	if err != nil {
 		return fs, err
 	}
@@ -145,7 +144,7 @@ func readFileInfo(fp string) (util.FileStream, error) {
 		return fs, err
 	}
 	return util.FileStream{
-		File:       open,
+		File:       nil,
 		Size:       uint64(stat.Size()),
 		ParentPath: "root",
 		Name:       stat.Name(),

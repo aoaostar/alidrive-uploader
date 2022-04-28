@@ -7,8 +7,8 @@ type (
 		Debug    bool `json:"debug"`
 		Transfers    uint64 `json:"transfers"`
 		AliDrive struct {
-			RefreshToken string `mapstructure:"refresh_token"`
 			DriveId      string `mapstructure:"drive_id"`
+			RefreshToken string `mapstructure:"refresh_token"`
 			RootPath     string `mapstructure:"root_path"`
 		} `mapstructure:"ali_drive"`
 	}

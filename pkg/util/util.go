@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"golang.org/x/net/html"
 	"io"
 	"math"
@@ -118,4 +119,22 @@ func FileExist(filepath string) bool {
 		return !os.IsNotExist(err)
 	}
 	return true
+}
+
+// 字节的单位转换 保留两位小数
+func FormatFileSize(fileSize float64) (size string) {
+	if fileSize < 1024 {
+		//return strconv.FormatInt(fileSize, 10) + "B"
+		return fmt.Sprintf("%.2fB", fileSize/float64(1))
+	} else if fileSize < (1024 * 1024) {
+		return fmt.Sprintf("%.2fKB", fileSize/float64(1024))
+	} else if fileSize < (1024 * 1024 * 1024) {
+		return fmt.Sprintf("%.2fMB", fileSize/float64(1024*1024))
+	} else if fileSize < (1024 * 1024 * 1024 * 1024) {
+		return fmt.Sprintf("%.2fGB", fileSize/float64(1024*1024*1024))
+	} else if fileSize < (1024 * 1024 * 1024 * 1024 * 1024) {
+		return fmt.Sprintf("%.2fTB", fileSize/float64(1024*1024*1024*1024))
+	} else { //if fileSize < (1024 * 1024 * 1024 * 1024 * 1024 * 1024)
+		return fmt.Sprintf("%.2fEB", fileSize/float64(1024*1024*1024*1024*1024))
+	}
 }

@@ -74,8 +74,9 @@ func Run() {
 		files = append(files, file)
 		dirs[dir] = ""
 	}
+	var StartTime = time.Now()
 	defer func() {
-		conf.Output.Infof("上传完毕！共计%d个文件，失败文件个数：%d个", len(files), len(errors))
+		conf.Output.Infof("上传完毕！共计%d个文件，失败文件个数：%d个，耗时：%v", len(files), len(errors),time.Since(StartTime))
 	}()
 	if len(files) <= 0 {
 		return

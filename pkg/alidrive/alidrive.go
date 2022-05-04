@@ -7,12 +7,15 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"github.com/sirupsen/logrus"
 	"io"
 	"io/ioutil"
 	"math"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 )
 
 type (
@@ -62,8 +65,8 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	var resp CreateWithFoldersResp
 	var e RespError
 
-	const CHUNKSIZE int64 = 10 * 1024 * 1024
-	var total = uint64(math.Ceil(float64(file.Size) / float64(CHUNKSIZE)))
+	const ChunkSize int64 = 10 * 1024 * 1024
+	var total = uint64(math.Ceil(float64(file.Size) / float64(ChunkSize)))
 
 	var partInfoList = make([]PartInfo, 0, total)
 	var i uint64
@@ -106,8 +109,6 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 				return err
 			}
 		}
-		fmt.Println(file.ParentPath)
-		panic(err)
 		return errors.New(e.Message)
 	}
 	//proof_code
@@ -146,8 +147,18 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	if _, err = file.File.Seek(0, 0); err != nil {
 		return err
 	}
+	//需要写入进度到日志的时期
+	var progress = map[float64]bool{
+		0.05: false,
+		0.25: false,
+		0.50: false,
+		0.75: false,
+		0.90: false,
+		0.95: false,
+	}
 	for i = 0; i < total; i++ {
-		req, err := http.NewRequest(http.MethodPut, drive.Instance.Proxy+resp.PartInfoList[i].UploadUrl, file.Bar.ProxyReader(io.LimitReader(file.File, CHUNKSIZE)))
+		var startTime = time.Now()
+		req, err := http.NewRequest(http.MethodPut, drive.Instance.Proxy+resp.PartInfoList[i].UploadUrl, file.Bar.ProxyReader(io.LimitReader(file.File, ChunkSize)))
 		if err != nil {
 			return err
 		}
@@ -194,6 +205,23 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 				resp.PartInfoList = getUploadUrlResp.PartInfoList
 				i--
 				continue
+			}
+		}
+		// 大于 100 * ChunkSize 的文件才会输出进度到日志
+		if total >= 100 {
+			currentProgress, _ := strconv.ParseFloat(fmt.Sprintf("%.2f", float64(i+1)/float64(total)), 64)
+
+			for k, v := range progress {
+				if !v && currentProgress >= k {
+					progress[k] = true
+					speedTime := time.Since(startTime)
+					logrus.Infof("[%s] 已上传 %v, 上传速度 %v/s, 共用时 %v, %v%%",
+						file.Name,
+						util.FormatFileSize(float64(int64(i+1)*ChunkSize)),
+						util.FormatFileSize(float64(ChunkSize)/speedTime.Seconds()),
+						speedTime,
+						currentProgress)
+				}
 			}
 		}
 	}

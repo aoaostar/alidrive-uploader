@@ -55,7 +55,6 @@ func Run() {
 		conf.Output.Panic(err)
 		return
 	}
-	conf.SaveConfig()
 
 	conf.Output.Infof("正在生成目录")
 	var files []util.FileStream

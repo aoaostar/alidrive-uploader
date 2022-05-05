@@ -56,6 +56,7 @@ func (drive *AliDrive) RefreshToken() error {
 	}
 	drive.Instance.RefreshToken, drive.Instance.AccessToken = resp.RefreshToken, resp.AccessToken
 	client.SetAuthToken(drive.Instance.AccessToken)
+	conf.SaveConfig()
 	return nil
 }
 
@@ -103,7 +104,6 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		if e.Code == "AccessTokenInvalid" {
 			err := drive.RefreshToken()
 			if err != nil {
-				conf.SaveConfig()
 				return drive.Upload(file)
 			} else {
 				return err
@@ -122,7 +122,6 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		createWithFoldersBody["content_hash"] = proofCode.Sha1
 		createWithFoldersBody["proof_code"] = proofCode.ProofCode
 		createWithFoldersBody["proof_version"] = "v1"
-		conf.Output.Debug("createWithFoldersBody", createWithFoldersBody)
 		_, err = client.R().
 			SetBody(&createWithFoldersBody).
 			SetResult(&resp).
@@ -182,7 +181,6 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 				if err != nil {
 					return err
 				}
-				conf.SaveConfig()
 				i--
 				continue
 			}
@@ -194,13 +192,24 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 					"part_info_list": partInfoList,
 					"upload_id":      resp.UploadId,
 				}
-				_, err := client.R().SetResult(&getUploadUrlResp).SetError(&e).SetBody(getUploadUrlBody).
+			GetUploadUrl:
+				var e2 RespError
+				_, err := client.R().SetResult(&getUploadUrlResp).SetError(&e2).SetBody(getUploadUrlBody).
 					Post("https://api.aliyundrive.com/v2/file/get_upload_url")
+
 				if err != nil {
 					return err
 				}
-				if e.Code != "" {
-					return errors.New(e.Message)
+				conf.Output.Debugf("%+v", e2)
+				if e2.Code == "AccessTokenInvalid" {
+					err := drive.RefreshToken()
+					if err != nil {
+						return err
+					}
+					goto GetUploadUrl
+				}
+				if e2.Code != "" {
+					return errors.New(e2.Message)
 				}
 				resp.PartInfoList = getUploadUrlResp.PartInfoList
 				i--
@@ -220,7 +229,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 						util.FormatFileSize(float64(int64(i+1)*ChunkSize)),
 						util.FormatFileSize(float64(ChunkSize)/speedTime.Seconds()),
 						speedTime,
-						currentProgress)
+						currentProgress*100)
 				}
 			}
 		}

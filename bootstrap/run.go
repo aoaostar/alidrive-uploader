@@ -15,6 +15,8 @@ import (
 
 var errors = map[string]string{}
 
+var dirs = make(map[string]string, 0)
+
 func Run() {
 	var err error
 
@@ -58,12 +60,11 @@ func Run() {
 
 	conf.Output.Infof("正在生成目录")
 	var files []util.FileStream
-	//建立目录结构
-	var dirs = make(map[string]string, 0)
 
+	//建立目录结构
 	for _, fp := range allFiles {
 		//目录
-		dir := filepath.Dir(fp)
+		dir := filepath.ToSlash(filepath.Dir(fp))
 		file, err := readFileInfo(conf.Opt.Positional.LocalPath + fp)
 		if err != nil {
 			conf.Output.Panic(err)

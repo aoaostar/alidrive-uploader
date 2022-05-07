@@ -28,8 +28,11 @@ func InitLog() {
 	logrus.SetOutput(logWriter)
 	if conf.Conf.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
+		conf.Output.SetLevel(logrus.DebugLevel)
 		logrus.SetReportCaller(true)
+		conf.Output.SetReportCaller(true)
 	} else {
 		logrus.SetLevel(logrus.InfoLevel)
+		conf.Output.SetLevel(logrus.InfoLevel)
 	}
 }

@@ -117,6 +117,8 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		if err != nil {
 			return err
 		}
+		var e = RespError{}
+		var resp = CreateWithFoldersResp{}
 		delete(createWithFoldersBody, "pre_hash")
 		createWithFoldersBody["content_hash_name"] = "sha1"
 		createWithFoldersBody["content_hash"] = proofCode.Sha1
@@ -172,6 +174,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 			if err != nil {
 				return err
 			}
+			var e = RespError{}
 			if err := xml.Unmarshal(readAll, &e); err != nil {
 				return err
 			}
@@ -236,18 +239,19 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	}
 	//complete
 	var resp2 = util.Json{}
+	var e2 RespError
 	_, err = client.R().SetResult(&resp2).SetBody(util.Json{
 		"drive_id":  drive.Instance.DriveId,
 		"file_id":   resp.FileId,
 		"upload_id": resp.UploadId,
-	}).SetError(&e).
+	}).SetError(&e2).
 		Post("https://api.aliyundrive.com/v2/file/complete")
 	if err != nil {
 		return err
 	}
-	conf.Output.Debugf("%+v,%+v", resp2, e)
-	if e.Code != "" {
-		return fmt.Errorf("%+v", e.Message)
+	conf.Output.Debugf("%+v,%+v", resp2, e2)
+	if e2.Code != "" {
+		return fmt.Errorf("%+v", e2.Message)
 	}
 	if resp2["file_id"] == resp.FileId {
 		return nil

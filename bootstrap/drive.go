@@ -17,7 +17,8 @@ type folderChan struct {
 	id       *string
 }
 
-var tree map[string]interface{}
+var tree = make(map[string]interface{})
+var locks = make(map[string]*sync.Mutex)
 
 func TreeFolders(drive *alidrive.AliDrive, remotePath string, dirs map[string]string) {
 
@@ -88,13 +89,16 @@ func createFolder(folderChan chan folderChan, drive *alidrive.AliDrive, bar *mpb
 			bar.Increment()
 			continue
 		}
+
 		// 从读取已有值
 		split := strings.Split(folder.pathname, "/")
 		var parentFolderId = drive.Instance.ParentPath
 		var pathname = folder.pathname
+		tmp := tree
 		for i := 0; i < len(split); i++ {
-			if v, b := tree[split[i]]; b {
-				if v2, b2 := v.(map[string]interface{})["__alidrive_id"].(*string); b2 && *v2 != "" {
+			var b bool
+			if tmp, b = tmp[split[i]].(map[string]interface{}); b {
+				if v2, b2 := tmp["__alidrive_id"].(*string); b2 && *v2 != "" {
 					parentFolderId = *v2
 					pathname = strings.Join(split[i+1:], "/")
 				}
@@ -103,20 +107,37 @@ func createFolder(folderChan chan folderChan, drive *alidrive.AliDrive, bar *mpb
 			}
 		}
 
-		//重试n次
-		for i := 0; i < 4; i++ {
-			folderId, err := drive.CreateFolders(pathname, parentFolderId)
-			if err != nil {
-				if i == 3 {
-					conf.Output.Panic(err, "  parentFolderId  ", parentFolderId)
-				}
-				conf.Output.Warnf("第%+v次重试", i+1)
-				continue
+		func() {
+
+			index := strings.Index(pathname, "/")
+			var lockKey string
+			if index > 0 {
+				lockKey = pathname[:index] + "_" + parentFolderId
+			} else {
+				lockKey = filepath.Base(pathname) + "_" + parentFolderId
 			}
-			*folder.id = folderId
-			bar.Increment()
-			break
-		}
+			if _, b := locks[lockKey]; !b {
+				locks[lockKey] = &sync.Mutex{}
+			}
+			locks[lockKey].Lock()
+
+			defer locks[lockKey].Unlock()
+			//重试n次
+			for i := 0; i < 4; i++ {
+				folderId, err := drive.CreateFolders(pathname, parentFolderId)
+				if err != nil {
+					if i == 3 {
+						conf.Output.Panic(err, "  parentFolderId  ", parentFolderId)
+					}
+					conf.Output.Warnf("第%+v次重试", i+1)
+					continue
+				}
+				*folder.id = folderId
+				bar.Increment()
+				break
+			}
+		}()
+
 	}
 }
 

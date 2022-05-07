@@ -260,6 +260,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 }
 
 func (drive *AliDrive) CreateFolders(path string, rootPath string) (string, error) {
+
 	path = filepath.ToSlash(path)
 	split := strings.Split(path, "/")
 	var parentFileId = rootPath

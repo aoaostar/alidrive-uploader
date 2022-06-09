@@ -33,7 +33,7 @@ func Run() {
 	}
 	var allFiles []string
 	if stat.IsDir() {
-		allFiles, err = util.GetAllFiles(conf.Opt.Positional.LocalPath)
+		allFiles, err = util.GetAllFiles(conf.Opt.Positional.LocalPath, conf.Conf.MatchPattern)
 		if err != nil {
 			conf.Output.Panic(err)
 			return

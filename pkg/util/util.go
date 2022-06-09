@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 )
@@ -89,12 +90,26 @@ func GetFileContentType(out *os.File) string {
 	return contentType
 }
 
-func GetAllFiles(path string) ([]string, error) {
-	var files []string
-	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			files = append(files, filepath.ToSlash(p)[len(filepath.Dir(path)):])
+func GetAllFiles(path string, matchPattern string) ([]string, error) {
+	var (
+		files      []string
+		matchRegex *regexp.Regexp = nil
+		err        error
+	)
+	if matchPattern != "" {
+		matchRegex, err = regexp.Compile(matchPattern)
+		if err != nil {
+			return files, err
 		}
+	}
+	err = filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+		if matchRegex != nil && !matchRegex.MatchString(filepath.Base(p)) {
+			return nil
+		}
+		files = append(files, filepath.ToSlash(p)[len(filepath.Dir(path)):])
 		return nil
 	})
 	sort.Slice(files, func(i, j int) bool {

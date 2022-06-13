@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"alidrive_uploader/conf"
 	"alidrive_uploader/pkg/alidrive"
+	"alidrive_uploader/pkg/checker"
 	"alidrive_uploader/pkg/util"
 	"github.com/sirupsen/logrus"
 	"github.com/vbauerster/mpb/v7"
@@ -62,10 +63,18 @@ func Run() {
 	var files []util.FileStream
 
 	//建立目录结构
+	localChecker := checker.NewChecker(
+		conf.Opt.Positional.LocalPath,
+		filepath.Dir(conf.Opt.Config),
+	)
 	for _, fp := range allFiles {
+		if localChecker.CheckExist(fp) {
+			continue
+		}
 		//目录
 		dir := filepath.ToSlash(filepath.Dir(fp))
 		file, err := readFileInfo(conf.Opt.Positional.LocalPath + fp)
+		file.LocalChecker = localChecker
 		if err != nil {
 			conf.Output.Panic(err)
 			return
@@ -77,6 +86,7 @@ func Run() {
 	var StartTime = time.Now()
 	defer func() {
 		conf.Output.Infof("上传完毕！共计%d个文件，失败文件个数：%d个，耗时：%v", len(files), len(errors), time.Since(StartTime))
+		localChecker.Save()
 	}()
 	if len(files) <= 0 {
 		return
@@ -120,6 +130,7 @@ func transfer(jobs chan util.FileStream, taskBar *mpb.Bar, p *mpb.Progress, driv
 			logrus.Errorf("[%v]上传失败:%v", file.Name, err)
 			errors[file.ReadlPath] = err.Error()
 		} else {
+			file.LocalChecker.AddFile(file.ReadlPath)
 			logrus.Infof("[%v]上传成功", file.Name)
 		}
 		taskBar.Increment()

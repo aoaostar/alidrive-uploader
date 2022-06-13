@@ -1,19 +1,22 @@
 package util
 
 import (
-	"github.com/vbauerster/mpb/v7"
+	"alidrive_uploader/pkg/checker"
 	"os"
+
+	"github.com/vbauerster/mpb/v7"
 )
 
 type Json map[string]interface{}
 type FileStream struct {
-	File       *os.File
-	Size       uint64
-	ParentPath string
-	Name       string
-	MIMEType   string
-	ReadlPath  string
-	Bar        *mpb.Bar
+	File         *os.File
+	Size         uint64
+	ParentPath   string
+	Name         string
+	MIMEType     string
+	ReadlPath    string
+	Bar          *mpb.Bar
+	LocalChecker *checker.Checker
 }
 
 type ProofCode struct {

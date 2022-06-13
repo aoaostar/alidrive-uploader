@@ -59,6 +59,7 @@ alidrive -p(--proxy) http://proxy.aoaostar.com
 debug: false
 transfers: 3
 proxy:
+match_pattern:
 ali_drive:
   drive_id: xxxxxxx
   refresh_token: xxxxxx
@@ -76,6 +77,7 @@ Application Options:
   -t, --transfers=     同时上传文件个数
   -c, --config=        配置文件路径 (default: config.yaml)
   -p, --proxy=         API代理
+  -m, --match_pattern= 正则过滤
   -v, --version        输出版本信息
       --drive_id=      驱动id
       --refresh_token= 刷新令牌
@@ -91,7 +93,7 @@ Arguments:
 
 ## 编译
 
-> 由于`windows`命令行风格太坑，需要禁用`posix style`
+> 由于`windows`命令行风格太坑，需要禁用`posix style`  
 > `linux`正常编译即可
 
 ```shell

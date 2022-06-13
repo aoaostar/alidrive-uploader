@@ -3,7 +3,7 @@
 hash tar uname grep curl head
 
 OS="$(uname)"
-PROXY="https://proxy.aoaostar.workers.dev/"
+PROXY="https://ghproxy.com/"
 
 case $OS in
   Linux)
@@ -65,9 +65,8 @@ fi
 Install()
 {
 	echo '正在下载阿里云盘上传工具...'
-  CORE_DOWNLOAD_URL=$PROXY$(curl -fsSL "$PROXY"https://api.github.com/repos/aoaostar/alidrive-uploader/releases/latest | grep "browser_download_url.*$OS.*$ARCH" | cut -d '"' -f 4)
+  CORE_DOWNLOAD_URL=$PROXY$(curl -fsSL https://api.github.com/repos/aoaostar/alidrive-uploader/releases/latest | grep "browser_download_url.*$OS.*$ARCH" | cut -d '"' -f 4)
   curl -L "$CORE_DOWNLOAD_URL" | tar -xz
-	#==================================================================
 	echo '================================================'
 	echo '阿里云盘上传工具下载完成'
 }

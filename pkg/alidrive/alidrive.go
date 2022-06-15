@@ -118,7 +118,6 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 			return err
 		}
 		var e = RespError{}
-		var resp = CreateWithFoldersResp{}
 		delete(createWithFoldersBody, "pre_hash")
 		createWithFoldersBody["content_hash_name"] = "sha1"
 		createWithFoldersBody["content_hash"] = proofCode.Sha1

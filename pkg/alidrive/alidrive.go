@@ -66,8 +66,16 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	var resp CreateWithFoldersResp
 	var e RespError
 
-	const ChunkSize int64 = 10 * 1024 * 1024
+	var ChunkSize uint64 = 10 * 1024 * 1024
 	var total = uint64(math.Ceil(float64(file.Size) / float64(ChunkSize)))
+	for {
+		if total >= 10000 {
+			ChunkSize += 5 * 1024 * 1024
+			total = uint64(math.Ceil(float64(file.Size) / float64(ChunkSize)))
+			continue
+		}
+		break
+	}
 
 	var partInfoList = make([]PartInfo, 0, total)
 	var i uint64
@@ -101,7 +109,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	}
 	conf.Output.Debugf("%+v,%+v", resp, e)
 	if e.Code != "" && e.Code != "PreHashMatched" {
-		if e.Code == "AccessTokenInvalid" {
+		if e.Code == "AccessTokenInvalid" || e.Code == "AccessTokenExpired" {
 			err := drive.RefreshToken()
 			if err != nil {
 				return drive.Upload(file)
@@ -158,7 +166,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	}
 	for i = 0; i < total; i++ {
 		var startTime = time.Now()
-		req, err := http.NewRequest(http.MethodPut, drive.Instance.Proxy+resp.PartInfoList[i].UploadUrl, file.Bar.ProxyReader(io.LimitReader(file.File, ChunkSize)))
+		req, err := http.NewRequest(http.MethodPut, drive.Instance.Proxy+resp.PartInfoList[i].UploadUrl, file.Bar.ProxyReader(io.LimitReader(file.File, int64(ChunkSize))))
 		if err != nil {
 			return err
 		}
@@ -178,7 +186,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 				return err
 			}
 			conf.Output.Debugf("%+v", e)
-			if e.Code == "AccessTokenInvalid" {
+			if e.Code == "AccessTokenInvalid" || e.Code == "AccessTokenExpired" {
 				err := drive.RefreshToken()
 				if err != nil {
 					return err
@@ -203,7 +211,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 					return err
 				}
 				conf.Output.Debugf("%+v", e2)
-				if e2.Code == "AccessTokenInvalid" {
+				if e.Code == "AccessTokenInvalid" || e.Code == "AccessTokenExpired" {
 					err := drive.RefreshToken()
 					if err != nil {
 						return err
@@ -228,7 +236,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 					speedTime := time.Since(startTime)
 					logrus.Infof("[%s] 已上传 %v, 上传速度 %v/s, 共用时 %v, %v%%",
 						file.Name,
-						util.FormatFileSize(float64(int64(i+1)*ChunkSize)),
+						util.FormatFileSize(float64((i+1)*ChunkSize)),
 						util.FormatFileSize(float64(ChunkSize)/speedTime.Seconds()),
 						speedTime,
 						currentProgress*100)

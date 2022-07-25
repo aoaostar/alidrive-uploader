@@ -109,7 +109,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	}
 	conf.Output.Debugf("%+v,%+v", resp, e)
 	if e.Code != "" && e.Code != "PreHashMatched" {
-		if e.Code == "AccessTokenInvalid" || e.Code == "AccessTokenExpired" {
+		if e.Code == "AccessTokenInvalid" {
 			err := drive.RefreshToken()
 			if err != nil {
 				return drive.Upload(file)
@@ -125,7 +125,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		if err != nil {
 			return err
 		}
-		var e = RespError{}
+		var e2 = RespError{}
 		delete(createWithFoldersBody, "pre_hash")
 		createWithFoldersBody["content_hash_name"] = "sha1"
 		createWithFoldersBody["content_hash"] = proofCode.Sha1
@@ -134,14 +134,14 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		_, err = client.R().
 			SetBody(&createWithFoldersBody).
 			SetResult(&resp).
-			SetError(&e).
+			SetError(&e2).
 			Post(url)
-		conf.Output.Debugf("%+v,%+v", resp, e)
+		conf.Output.Debugf("%+v,%+v", resp, e2)
 		if err != nil {
 			return err
 		}
-		if e.Code != "" && e.Code != "PreHashMatched" {
-			return errors.New(e.Message)
+		if e2.Code != "" && e2.Code != "PreHashMatched" {
+			return errors.New(e2.Message)
 		}
 		if resp.RapidUpload {
 			return nil
@@ -186,7 +186,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 				return err
 			}
 			conf.Output.Debugf("%+v", e)
-			if e.Code == "AccessTokenInvalid" || e.Code == "AccessTokenExpired" {
+			if e.Code == "AccessTokenInvalid" {
 				err := drive.RefreshToken()
 				if err != nil {
 					return err
@@ -194,7 +194,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 				i--
 				continue
 			}
-			if e.Message == "Request has expired." {
+			if e.Code == "AccessDenied" {
 				getUploadUrlResp := GetUploadUrlResp{}
 				var getUploadUrlBody = util.Json{
 					"drive_id":       drive.Instance.DriveId,
@@ -211,7 +211,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 					return err
 				}
 				conf.Output.Debugf("%+v", e2)
-				if e.Code == "AccessTokenInvalid" || e.Code == "AccessTokenExpired" {
+				if e2.Code == "AccessTokenInvalid" {
 					err := drive.RefreshToken()
 					if err != nil {
 						return err

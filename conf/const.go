@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	VERSION = "v2.1.3"
+	VERSION = "v2.1.4"
 )
 
 var executable, _ = os.Executable()

@@ -31,6 +31,8 @@ type Option struct {
 	Proxy        string  `short:"p" long:"proxy" description:"API代理"`
 	MatchPattern string  `short:"m" long:"match_pattern" description:"正则过滤"`
 	Version      func()  `short:"v" long:"version" description:"输出版本信息"`
+	Refresh      bool    `short:"r" long:"refresh" description:"刷新token"`
+	Clean        func()  `long:"clean" description:"清空缓存，清理上传记录"`
 	AliDrive     struct {
 		DriveId      string `long:"drive_id" description:"驱动id"`
 		RefreshToken string `long:"refresh_token" description:"刷新令牌"`

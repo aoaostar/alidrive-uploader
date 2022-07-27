@@ -17,10 +17,10 @@ func InitConfig() {
 	conf.VipConfig.SetConfigFile(configPath)
 	// 查找并读取配置文件
 	if err := conf.VipConfig.ReadInConfig(); err != nil {
-		logrus.Fatalf("读取配置出错: %s \n", err)
+		logrus.Fatalf("读取配置出错: %s", err)
 	}
 	if err := conf.VipConfig.Unmarshal(&conf.Conf); err != nil {
-		logrus.Fatalf("解析配置出错: %s \n", err)
+		logrus.Fatalf("解析配置出错: %s", err)
 	}
 	if conf.Opt.Debug != nil {
 		conf.Conf.Debug = *conf.Opt.Debug

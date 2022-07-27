@@ -32,6 +32,11 @@ func NewChecker(localDir, confDir string) *Checker {
 	if !checker.isDir {
 		return &checker
 	}
+	if _, err := os.Stat(confDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(confDir, 0644); err != nil {
+			return &checker
+		}
+	}
 	hash := md5.Sum([]byte(localDir))
 	hashMD5 := hex.EncodeToString(hash[:])[8:14]
 	baseDir := strings.Trim(filepath.Base(localDir), "/")

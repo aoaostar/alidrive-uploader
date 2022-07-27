@@ -2,10 +2,12 @@ package bootstrap
 
 import (
 	"alidrive_uploader/conf"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"io"
 	"os"
+	"runtime"
 )
 
 func InitLog() {
@@ -35,4 +37,18 @@ func InitLog() {
 		logrus.SetLevel(logrus.InfoLevel)
 		conf.Output.SetLevel(logrus.InfoLevel)
 	}
+
+	conf.Output.Infoln(fmt.Sprintf(`
++────────────────────────────────────────────────────────────────────────────────────────+
+		___       ___       ___       ___       ___       ___       ___       ___   
+	   /\  \     /\__\     /\  \     /\  \     /\  \     /\  \     /\__\     /\  \  
+	  /::\  \   /:/  /    _\:\  \   /::\  \   /::\  \   _\:\  \   /:/ _/_   /::\  \ 
+	 /::\:\__\ /:/__/    /\/::\__\ /:/\:\__\ /::\:\__\ /\/::\__\ |::L/\__\ /::\:\__\
+	 \/\::/  / \:\  \    \::/\/__/ \:\/:/  / \;:::/  / \::/\/__/ |::::/  / \:\:\/  /
+	   /:/  /   \:\__\    \:\__\    \::/  /   |:\/__/   \:\__\    L;;/__/   \:\/  / 
+	   \/__/     \/__/     \/__/     \/__/     \|__|     \/__/               \/__/  
+
+			Version: %s Runtime: %s/%s Go Version: %s
++────────────────────────────────────────────────────────────────────────────────────────+
+`, conf.VERSION, runtime.GOOS, runtime.GOARCH, runtime.Version()))
 }

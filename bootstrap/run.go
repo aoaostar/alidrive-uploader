@@ -65,7 +65,7 @@ func Run() {
 	//建立目录结构
 	localChecker := checker.NewChecker(
 		conf.Opt.Positional.LocalPath,
-		filepath.Dir(conf.Opt.Config),
+		conf.APP_PATH+"runtime/checker",
 	)
 	for _, fp := range allFiles {
 		if localChecker.CheckExist(fp) {

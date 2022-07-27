@@ -27,7 +27,6 @@ func TreeFolders(drive *alidrive.AliDrive, remotePath string, dirs map[string]st
 
 	var err error
 	drive.Instance.ParentPath, err = drive.CreateFolders(conf.Conf.AliDrive.RootPath+"/"+remotePath, "root")
-	conf.Output.Debugf(drive.Instance.ParentPath)
 	if err != nil {
 		conf.Output.Panic(err)
 		return

@@ -20,6 +20,7 @@ type (
 	}
 	PartInfo struct {
 		PartNumber uint64 `json:"part_number"`
+		PartSize   uint64 `json:"part_size"`
 	}
 	PartInfoResp struct {
 		PartNumber        int    `json:"part_number"`

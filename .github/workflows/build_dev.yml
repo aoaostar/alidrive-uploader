@@ -38,16 +38,16 @@ jobs:
           fi
       - name: Build linux
         run: |
-          CC=gcc CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o alidrive_uploader_linux_amd64/alidrive main.go
-          CC=aarch64-linux-gnu-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -o alidrive_uploader_linux_arm64/alidrive main.go
-          CC=arm-linux-gnueabihf-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm go build -o alidrive_uploader_linux_arm/alidrive main.go
+          CC=gcc CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -trimpath -o alidrive_uploader_linux_amd64/alidrive main.go
+          CC=aarch64-linux-gnu-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -trimpath -o alidrive_uploader_linux_arm64/alidrive main.go
+          CC=arm-linux-gnueabihf-gcc CGO_ENABLED=1 GOOS=linux GOARCH=arm go build -trimpath -o alidrive_uploader_linux_arm/alidrive main.go
       - name: Build windows
         run: |
-          CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -tags forceposix -o alidrive_uploader_windows_amd64/alidrive.exe main.go
+          CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 go build -trimpath -tags forceposix -o alidrive_uploader_windows_amd64/alidrive.exe main.go
       - name: Build linux_386
         run: |
           sudo apt-get -y install libc6-dev-i386
-          CC=gcc CGO_ENABLED=1 GOOS=linux GOARCH=386 go build -o alidrive_uploader_linux_386/alidrive main.go
+          CC=gcc CGO_ENABLED=1 GOOS=linux GOARCH=386 go build -trimpath -o alidrive_uploader_linux_386/alidrive main.go
 
       - name: Copy additional files
         run: |

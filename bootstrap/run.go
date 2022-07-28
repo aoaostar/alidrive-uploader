@@ -130,8 +130,8 @@ func transfer(jobs chan util.FileStream, taskBar *mpb.Bar, p *mpb.Progress, driv
 		for i := 0; i <= int(conf.Conf.Retry); i++ {
 			err = drive.Upload(file)
 			if e, ok := err.(net.Error); ok && e.Timeout() {
-				conf.Output.Errorf("[%s] %s", file.Name, err.Error())
-				conf.Output.Infof("[%s] 第%d次重试中", file.Name, i+1)
+				logrus.Errorf("[%s] %s", file.Name, err.Error())
+				logrus.Warnf("[%s] 第%d次重试中", file.Name, i+1)
 				continue
 			}
 			break

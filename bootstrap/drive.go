@@ -4,8 +4,10 @@ import (
 	"alidrive_uploader/conf"
 	"alidrive_uploader/pkg/alidrive"
 	"alidrive_uploader/pkg/util"
+	"github.com/sirupsen/logrus"
 	"github.com/vbauerster/mpb/v7"
 	"math"
+	"net"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -125,11 +127,13 @@ func createFolder(folderChan chan folderChan, drive *alidrive.AliDrive, bar *mpb
 			for i := 0; i < 4; i++ {
 				folderId, err := drive.CreateFolders(pathname, parentFolderId)
 				if err != nil {
-					if i == 3 {
-						conf.Output.Panic(err, "  parentFolderId  ", parentFolderId)
+					if e, ok := err.(net.Error); ok && e.Timeout() {
+						if i == 3 {
+							conf.Output.Panicf("[CreateFolders] %s parentFolderId %s", err.Error(), parentFolderId)
+						}
+						logrus.Warnf("[CreateFolders] 第%d次重试", i+1)
+						continue
 					}
-					conf.Output.Warnf("第%+v次重试", i+1)
-					continue
 				}
 				*folder.id = folderId
 				bar.Increment()

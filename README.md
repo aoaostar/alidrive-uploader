@@ -29,7 +29,7 @@ curl -sL https://raw.githubusercontent.com/aoaostar/alidrive-uploader/v2/install
 
 ```javascript
 var d = JSON.parse(localStorage.getItem('token'));
-console.log(`\tdrive_id: ${d.default_drive_id}\n\trefresh_token: ${d.refresh_token}`);
+console.log(`  drive_id: ${d.default_drive_id}\n  refresh_token: ${d.refresh_token}`);
 ```
 
 ### Proxy 使用方法

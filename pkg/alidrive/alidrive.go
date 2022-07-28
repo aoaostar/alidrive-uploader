@@ -38,7 +38,7 @@ func New(instance Instance) *AliDrive {
 }
 
 func (drive *AliDrive) RefreshToken() error {
-	conf.Output.Infof("[刷新token] 正在刷新")
+	logrus.Infof("[刷新token] 正在刷新")
 	url := "https://auth.aliyundrive.com/v2/account/token"
 	var resp TokenResp
 	var e RespError
@@ -50,16 +50,16 @@ func (drive *AliDrive) RefreshToken() error {
 			Post(url)
 		if err != nil {
 			if err2, ok := err.(net.Error); ok && err2.Timeout() {
-				conf.Output.Errorf("[刷新token] %s", err.Error())
-				conf.Output.Infof("[刷新token] 第%d次重试中", i+1)
+				logrus.Errorf("[刷新token] %s", err.Error())
+				logrus.Warnf("[刷新token] 第%d次重试中", i+1)
 				continue
 			}
 			return err
 		}
 		break
 	}
-	conf.Output.Debugf("%+v", resp)
-	conf.Output.Debugf("%+v", e)
+	logrus.Debugf("%+v", resp)
+	logrus.Debugf("%+v", e)
 
 	if e.Code != "" {
 		return fmt.Errorf("[刷新token] 失败: %s: %s", e.Code, e.Message)
@@ -67,7 +67,7 @@ func (drive *AliDrive) RefreshToken() error {
 	drive.Instance.RefreshToken, drive.Instance.AccessToken = resp.RefreshToken, resp.AccessToken
 	client.SetAuthToken(drive.Instance.AccessToken)
 	conf.SaveConfig()
-	conf.Output.Infof("[刷新token] 成功")
+	logrus.Infof("[刷新token] 成功")
 	return nil
 }
 
@@ -132,9 +132,9 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	if err != nil {
 		return err
 	}
-	conf.Output.Debugf("[%s] %+v", file.Name, createWithFoldersBody)
-	conf.Output.Debugf("[%s] %+v", file.Name, resp)
-	conf.Output.Debugf("[%s] %+v", file.Name, e)
+	logrus.Debugf("[%s] %+v", file.Name, createWithFoldersBody)
+	logrus.Debugf("[%s] %+v", file.Name, resp)
+	logrus.Debugf("[%s] %+v", file.Name, e)
 	if e.Code != "" && e.Code != "PreHashMatched" {
 		if e.Code == "AccessTokenInvalid" {
 			if err := drive.RefreshToken(); err != nil {
@@ -162,9 +162,9 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 			SetResult(&resp).
 			SetError(&e2).
 			Post(url)
-		conf.Output.Debugf("[%s] %+v", file.Name, createWithFoldersBody)
-		conf.Output.Debugf("[%s] %+v", file.Name, resp)
-		conf.Output.Debugf("[%s] %+v", file.Name, e2)
+		logrus.Debugf("[%s] %+v", file.Name, createWithFoldersBody)
+		logrus.Debugf("[%s] %+v", file.Name, resp)
+		logrus.Debugf("[%s] %+v", file.Name, e2)
 		if err != nil {
 			return err
 		}
@@ -172,7 +172,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 			return fmt.Errorf("%s: %s", e2.Code, e2.Message)
 		}
 		if resp.RapidUpload {
-			conf.Output.Infof("[%s] 秒传成功，思密达~", file.Name)
+			logrus.Infof("[%s] 秒传成功，思密达~", file.Name)
 			return nil
 		}
 	}
@@ -203,7 +203,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		var startTime = time.Now()
 		for num := 0; num <= int(conf.Conf.Retry); num++ {
 			if num > 0 {
-				conf.Output.Infof("[%s][upload] 第%d次重试中", file.Name, num)
+				logrus.Warnf("[%s][upload] 第%d次重试中", file.Name, num)
 			}
 			if _, err := file.File.Seek(int64(ChunkSize*i), io.SeekStart); err != nil {
 				return err
@@ -217,7 +217,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 			if err != nil {
 				//请求超时重试
 				if err2, ok := err.(net.Error); ok && err2.Timeout() {
-					conf.Output.Errorf("[%s] %s", file.Name, err.Error())
+					logrus.Errorf("[%s] %s", file.Name, err.Error())
 					continue
 				}
 				return err
@@ -232,7 +232,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 				if err := xml.Unmarshal(readAll, &e); err != nil {
 					return err
 				}
-				conf.Output.Debugf("[%s] %+v", file.Name, e)
+				logrus.Debugf("[%s] %+v", file.Name, e)
 				if e.Code == "AccessTokenInvalid" {
 					if err := drive.RefreshToken(); err != nil {
 						return err
@@ -254,12 +254,12 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 						Post("https://api.aliyundrive.com/v2/file/get_upload_url"); err != nil {
 						//请求超时重试
 						if err2, ok := err.(net.Error); ok && err2.Timeout() {
-							conf.Output.Errorf("[%s][GetUploadUrl] %s", file.Name, err.Error())
+							logrus.Errorf("[%s][GetUploadUrl] %s", file.Name, err.Error())
 							continue
 						}
 						return err
 					}
-					conf.Output.Debugf("[%s] %+v", file.Name, e2)
+					logrus.Debugf("[%s] %+v", file.Name, e2)
 					if e2.Code == "AccessTokenInvalid" {
 						if err := drive.RefreshToken(); err != nil {
 							return err
@@ -310,8 +310,8 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		if err != nil {
 			//请求超时重试
 			if err2, ok := err.(net.Error); ok && err2.Timeout() {
-				conf.Output.Errorf("[%s][complete] %s", file.Name, err.Error())
-				conf.Output.Errorf("[%s][complete] 第%d次重试中", file.Name, i+1)
+				logrus.Errorf("[%s][complete] %s", file.Name, err.Error())
+				logrus.Errorf("[%s][complete] 第%d次重试中", file.Name, i+1)
 				continue
 			}
 			return err
@@ -327,8 +327,8 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		// complete完毕break
 		break
 	}
-	conf.Output.Debugf("[%s] %+v", file.Name, resp2)
-	conf.Output.Debugf("[%s] %+v", file.Name, e2)
+	logrus.Debugf("[%s] %+v", file.Name, resp2)
+	logrus.Debugf("[%s] %+v", file.Name, e2)
 	if e2.Code != "" {
 		return fmt.Errorf("%s: %s", e2.Code, e2.Message)
 	}
@@ -361,8 +361,8 @@ func (drive *AliDrive) CreateFolders(path string, rootPath string) (string, erro
 		if err != nil {
 			return parentFileId, err
 		}
-		conf.Output.Debugf("%+v", resp)
-		conf.Output.Debugf("%+v", e)
+		logrus.Debugf("%+v", resp)
+		logrus.Debugf("%+v", e)
 		if e.Code != "" {
 			return parentFileId, fmt.Errorf("%s: %s", e.Code, e.Message)
 		}

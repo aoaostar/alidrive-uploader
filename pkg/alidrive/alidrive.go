@@ -42,7 +42,7 @@ func (drive *AliDrive) RefreshToken() error {
 	url := "https://auth.aliyundrive.com/v2/account/token"
 	var resp TokenResp
 	var e RespError
-	for i := 0; i < 3; i++ {
+	for i := 0; i <= int(conf.Conf.Retry); i++ {
 		_, err := client.R().
 			SetBody(util.Json{"refresh_token": drive.Instance.RefreshToken, "grant_type": "refresh_token"}).
 			SetResult(&resp).
@@ -172,6 +172,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 			return fmt.Errorf("%s: %s", e2.Code, e2.Message)
 		}
 		if resp.RapidUpload {
+			conf.Output.Infof("[%s] 秒传成功，思密达~", file.Name)
 			return nil
 		}
 	}
@@ -200,9 +201,9 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 
 	for i = 0; i < total; i++ {
 		var startTime = time.Now()
-		for num := 0; num < 4; num++ {
+		for num := 0; num <= int(conf.Conf.Retry); num++ {
 			if num > 0 {
-				conf.Output.Infof("[%s] 第%d次重试中", file.Name, num)
+				conf.Output.Infof("[%s][upload] 第%d次重试中", file.Name, num)
 			}
 			if _, err := file.File.Seek(int64(ChunkSize*i), io.SeekStart); err != nil {
 				return err
@@ -253,7 +254,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 						Post("https://api.aliyundrive.com/v2/file/get_upload_url"); err != nil {
 						//请求超时重试
 						if err2, ok := err.(net.Error); ok && err2.Timeout() {
-							conf.Output.Errorf("[%s] %s", file.Name, err.Error())
+							conf.Output.Errorf("[%s][GetUploadUrl] %s", file.Name, err.Error())
 							continue
 						}
 						return err
@@ -299,7 +300,7 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 	//complete
 	var resp2 = util.Json{}
 	var e2 RespError
-	for i := 0; i < 4; i++ {
+	for i := 0; i <= int(conf.Conf.Retry); i++ {
 		_, err = client.R().SetResult(&resp2).SetBody(util.Json{
 			"drive_id":  drive.Instance.DriveId,
 			"file_id":   resp.FileId,
@@ -309,9 +310,19 @@ func (drive *AliDrive) Upload(file util.FileStream) error {
 		if err != nil {
 			//请求超时重试
 			if err2, ok := err.(net.Error); ok && err2.Timeout() {
+				conf.Output.Errorf("[%s][complete] %s", file.Name, err.Error())
+				conf.Output.Errorf("[%s][complete] 第%d次重试中", file.Name, i+1)
 				continue
 			}
 			return err
+		}
+		if e2.Code == "AccessTokenInvalid" {
+			if err := drive.RefreshToken(); err != nil {
+				i--
+				continue
+			} else {
+				return err
+			}
 		}
 		// complete完毕break
 		break

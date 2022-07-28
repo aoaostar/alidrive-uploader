@@ -27,7 +27,7 @@ curl -sL https://raw.githubusercontent.com/aoaostar/alidrive-uploader/v2/install
 
 ### 控制台快速获取代码
 
-```js
+```javascript
 var d = JSON.parse(localStorage.getItem('token'));
 console.log(`\tdrive_id: ${d.default_drive_id}\n\trefresh_token: ${d.refresh_token}`);
 ```
@@ -67,6 +67,7 @@ debug: false
 transfers: 3
 proxy:
 match_pattern:
+retry: 3
 ali_drive:
   drive_id: xxxxxxx
   refresh_token: xxxxxx
@@ -86,7 +87,8 @@ Application Options:
   -p, --proxy=         API代理
   -m, --match_pattern= 正则过滤
   -v, --version        输出版本信息
-  -r, --refresh        刷新token
+  -r, --retry=         请求超时最大重试次数
+      --refresh        刷新token
       --clean          清空缓存，清理上传记录
       --drive_id=      驱动id
       --refresh_token= 刷新令牌

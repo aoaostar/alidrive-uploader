@@ -44,4 +44,10 @@ func InitConfig() {
 	if conf.Opt.Proxy != "" {
 		conf.Conf.Proxy = conf.Opt.Proxy
 	}
+	if conf.Opt.Retry != nil {
+		conf.Conf.Retry = *conf.Opt.Retry
+	}
+	if conf.Conf.Retry <= 0 {
+		conf.Conf.Retry = 3
+	}
 }

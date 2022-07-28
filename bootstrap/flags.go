@@ -22,7 +22,7 @@ func InitFlags() {
 			parser.WriteHelp(os.Stdout)
 			os.Exit(0)
 		} else {
-			fmt.Println(e)
+			fmt.Print(e)
 			os.Exit(1)
 		}
 	}

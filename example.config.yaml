@@ -2,6 +2,7 @@ debug: false
 transfers: 3
 proxy:
 match_pattern:
+retry: 3
 ali_drive:
   drive_id: xxxxxxx
   refresh_token: xxxxxx

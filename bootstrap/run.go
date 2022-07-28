@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/vbauerster/mpb/v7"
 	"math"
+	"net"
 	"os"
 	"path/filepath"
 	"sync"
@@ -15,6 +16,7 @@ import (
 )
 
 var errors = map[string]string{}
+var successes = 0
 
 var dirs = make(map[string]string, 0)
 
@@ -85,7 +87,7 @@ func Run() {
 	}
 	var StartTime = time.Now()
 	defer func() {
-		conf.Output.Infof("上传完毕！共计%d个文件，失败文件个数：%d个，耗时：%v", len(files), len(errors), time.Since(StartTime))
+		conf.Output.Infof("上传完毕！共计%d个文件，失败文件个数：%d个，耗时：%v", len(files), len(files)-successes, time.Since(StartTime))
 		localChecker.Save()
 	}()
 	if len(files) <= 0 {
@@ -124,14 +126,24 @@ func transfer(jobs chan util.FileStream, taskBar *mpb.Bar, p *mpb.Progress, driv
 		file.File, _ = os.Open(file.ReadlPath)
 		file.Bar = util.NewMpb(p, file.Name, int64(file.Size))
 		file.ParentPath = dirs[file.ParentPath]
-		err := drive.Upload(file)
+		var err error
+		for i := 0; i <= int(conf.Conf.Retry); i++ {
+			err = drive.Upload(file)
+			if e, ok := err.(net.Error); ok && e.Timeout() {
+				conf.Output.Errorf("[%s] %s", file.Name, err.Error())
+				conf.Output.Infof("[%s] 第%d次重试中", file.Name, i+1)
+				continue
+			}
+			break
+		}
 		file.Bar.Abort(true)
 		if err != nil {
-			logrus.Errorf("[%v]上传失败:%v", file.Name, err)
+			logrus.Errorf("[%v]上传失败: %v", file.Name, err)
 			errors[file.ReadlPath] = err.Error()
 		} else {
 			file.LocalChecker.AddFile(file.ReadlPath)
 			logrus.Infof("[%v]上传成功", file.Name)
+			successes++
 		}
 		taskBar.Increment()
 		_ = file.File.Close()
